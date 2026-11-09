@@ -1,0 +1,1903 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>새로고침 재고관리</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<style>
+:root{
+  --navy:#16233F;
+  --navy-light:#233657;
+  --blue:#3468E0;
+  --blue-soft:#EAF0FE;
+  --bg:#F3F5F8;
+  --card:#FFFFFF;
+  --border:#E3E7EE;
+  --text:#151B2B;
+  --muted:#7A8399;
+  --danger:#E0483B;
+  --green:#1FA37A;
+  --radius:14px;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{
+  font-family:'Pretendard',-apple-system,BlinkMacSystemFont,'Malgun Gothic',sans-serif;
+  background:var(--bg);
+  color:var(--text);
+  padding-bottom:78px;
+  -webkit-tap-highlight-color:transparent;
+}
+header{
+  background:var(--navy);
+  color:#fff;
+  padding:16px 16px 18px;
+  border-radius:0 0 18px 18px;
+}
+header .brand{
+  font-size:11.5px;
+  letter-spacing:.1em;
+  color:#9FB4E8;
+  font-weight:600;
+  display:flex;
+  align-items:center;
+  gap:6px;
+}
+.status-dot{
+  width:7px;height:7px;border-radius:50%;
+  background:#F5A623;
+  transition:background .2s;
+}
+.status-dot.online{background:var(--green);}
+.status-dot.offline{background:var(--danger);}
+header h1{
+  font-size:18.5px;
+  margin-top:3px;
+  font-weight:700;
+}
+.header-top{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+  margin-top:3px;
+}
+.header-top h1{margin-top:0;}
+.user-chip{
+  flex:0 0 auto;
+  max-width:55%;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  border:none;
+  background:var(--navy-light);
+  color:#fff;
+  font-size:11.5px;
+  font-weight:700;
+  padding:6px 10px;
+  border-radius:20px;
+  cursor:pointer;
+}
+.user-chip.empty{
+  background:#F5A623;
+  color:var(--navy);
+}
+.name-hint{
+  font-size:12.5px;
+  color:var(--muted);
+  line-height:1.6;
+  margin:-6px 0 14px;
+}
+.summary-row{
+  display:flex;
+  gap:8px;
+  margin-top:11px;
+}
+.summary-box{
+  flex:1;
+  background:var(--navy-light);
+  border-radius:10px;
+  padding:8px 11px;
+}
+.summary-box .label{font-size:10.5px;color:#A9B7D6;}
+.summary-box .value{font-size:14.5px;font-weight:700;margin-top:2px;}
+
+.search-wrap{
+  padding:12px 12px 0;
+}
+.search-box{
+  position:relative;
+}
+.search-wrap input{
+  width:100%;
+  padding:9px 12px;
+  border-radius:10px;
+  border:1px solid var(--border);
+  background:var(--card);
+  font-size:13.5px;
+  outline:none;
+}
+.search-wrap input:focus{border-color:var(--blue);}
+
+.search-history{
+  position:absolute;
+  top:calc(100% + 4px);
+  left:0;
+  right:0;
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:10px;
+  box-shadow:0 8px 20px rgba(15,20,35,.12);
+  z-index:40;
+  max-height:280px;
+  overflow-y:auto;
+  display:none;
+}
+.search-history.open{display:block;}
+.sh-head{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:8px 12px;
+  font-size:11.5px;
+  color:var(--muted);
+  font-weight:700;
+  border-bottom:1px solid var(--border);
+  position:sticky;
+  top:0;
+  background:var(--card);
+}
+.sh-clear{
+  border:none;
+  background:none;
+  color:var(--muted);
+  font-size:11.5px;
+  font-weight:600;
+  cursor:pointer;
+  padding:2px 4px;
+}
+.sh-item{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+  padding:10px 12px;
+  font-size:13.5px;
+  border-bottom:1px solid var(--border);
+  cursor:pointer;
+}
+.sh-item:last-child{border-bottom:none;}
+.sh-item:active{background:var(--bg);}
+.sh-term{
+  flex:1;
+  min-width:0;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.sh-del{
+  border:none;
+  background:none;
+  color:var(--muted);
+  font-size:17px;
+  line-height:1;
+  padding:2px 6px;
+  cursor:pointer;
+}
+.sh-empty{
+  padding:14px 12px;
+  text-align:center;
+  color:var(--muted);
+  font-size:12.5px;
+}
+
+.container{padding:12px;}
+
+.cat-card{
+  background:var(--card);
+  border-radius:12px;
+  border:1px solid var(--border);
+  margin-bottom:10px;
+  overflow:hidden;
+}
+.cat-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:10px 12px;
+  border-left:4px solid var(--blue);
+  cursor:pointer;
+}
+.cat-head .cat-title{
+  font-size:14.5px;
+  font-weight:700;
+}
+.cat-head .cat-count{
+  font-size:11px;
+  color:var(--muted);
+  font-weight:500;
+  margin-top:1px;
+}
+.cat-head-right{
+  display:flex;
+  align-items:center;
+  gap:6px;
+}
+.cat-move{
+  display:flex;
+  gap:4px;
+  margin-right:4px;
+}
+.cat-move button{
+  width:24px;
+  height:24px;
+  border:1px solid var(--border);
+  background:#FBFCFE;
+  color:var(--muted);
+  border-radius:6px;
+  font-size:11px;
+  line-height:1;
+  cursor:pointer;
+}
+.cat-move button:disabled{
+  opacity:.35;
+  cursor:default;
+}
+.chev{
+  transition:transform .2s;
+  color:var(--muted);
+}
+.chev.open{transform:rotate(180deg);}
+.icon-btn{
+  border:none;
+  background:none;
+  color:var(--muted);
+  font-size:18px;
+  padding:6px;
+  line-height:1;
+  cursor:pointer;
+}
+.cat-body{
+  border-top:1px solid var(--border);
+  display:none;
+}
+.cat-body.open{display:block;}
+
+.item-row{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:8px 12px;
+  border-bottom:1px solid var(--border);
+  gap:8px;
+}
+.item-row:last-child{border-bottom:none;}
+.item-move{
+  display:flex;
+  flex-direction:column;
+  gap:2px;
+}
+.item-move button{
+  width:22px;
+  height:18px;
+  border:1px solid var(--border);
+  background:#FBFCFE;
+  color:var(--muted);
+  border-radius:5px;
+  font-size:10px;
+  line-height:1;
+  cursor:pointer;
+}
+.item-move button:disabled{
+  opacity:.35;
+  cursor:default;
+}
+.item-location{
+  display:inline-block;
+  font-size:10px;
+  font-weight:700;
+  color:var(--blue);
+  background:var(--blue-soft);
+  padding:1px 6px;
+  border-radius:5px;
+  margin-bottom:3px;
+}
+.item-name{
+  font-size:13.5px;
+  font-weight:600;
+}
+.item-meta{
+  font-size:11px;
+  color:var(--muted);
+  margin-top:2px;
+}
+.item-qty-big{
+  font-size:15px;
+  font-weight:800;
+  color:var(--blue);
+  text-align:right;
+  white-space:nowrap;
+}
+.item-left{flex:1;min-width:0;}
+
+.add-item-btn{
+  width:100%;
+  padding:10px;
+  text-align:center;
+  color:var(--blue);
+  font-weight:600;
+  font-size:12.5px;
+  background:var(--blue-soft);
+  border:none;
+  cursor:pointer;
+}
+
+.empty-cat{
+  padding:18px 12px;
+  text-align:center;
+  color:var(--muted);
+  font-size:12.5px;
+}
+
+.fab-row{
+  position:fixed;
+  bottom:14px;
+  left:12px;
+  right:12px;
+  display:flex;
+  gap:8px;
+  max-width:520px;
+  margin:0 auto;
+}
+.fab{
+  flex:1;
+  padding:12px;
+  border-radius:12px;
+  border:none;
+  font-size:13.5px;
+  font-weight:700;
+  cursor:pointer;
+}
+.fab.primary{
+  background:var(--blue);
+  color:#fff;
+  box-shadow:0 6px 16px rgba(52,104,224,.35);
+}
+.fab.ghost{
+  background:var(--card);
+  color:var(--navy);
+  border:1px solid var(--border);
+}
+
+.overlay{
+  position:fixed;
+  inset:0;
+  background:rgba(15,20,35,.45);
+  display:none;
+  align-items:flex-end;
+  justify-content:center;
+  z-index:50;
+}
+.overlay.open{display:flex;}
+.sheet{
+  background:var(--card);
+  width:100%;
+  max-width:520px;
+  border-radius:20px 20px 0 0;
+  padding:20px 18px 26px;
+  max-height:88vh;
+  overflow-y:auto;
+}
+.sheet h2{
+  font-size:17px;
+  margin-bottom:16px;
+}
+.field{margin-bottom:14px;}
+.field label{
+  display:block;
+  font-size:13px;
+  color:var(--muted);
+  margin-bottom:6px;
+  font-weight:600;
+}
+.field input, .field select{
+  width:100%;
+  padding:12px 14px;
+  border-radius:10px;
+  border:1px solid var(--border);
+  font-size:15px;
+  background:#FBFCFE;
+  outline:none;
+}
+.field input:focus, .field select:focus{border-color:var(--blue);}
+.unit-grid{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:8px;
+}
+.unit-opt{
+  padding:11px 0;
+  text-align:center;
+  border-radius:10px;
+  border:1px solid var(--border);
+  font-size:14px;
+  font-weight:600;
+  color:var(--text);
+  background:#FBFCFE;
+  cursor:pointer;
+}
+.unit-opt.selected{
+  background:var(--blue);
+  border-color:var(--blue);
+  color:#fff;
+}
+.sheet-btns{
+  display:flex;
+  gap:10px;
+  margin-top:18px;
+}
+.sheet-btns button{
+  flex:1;
+  padding:14px;
+  border-radius:12px;
+  border:none;
+  font-size:15px;
+  font-weight:700;
+  cursor:pointer;
+}
+.btn-save{background:var(--blue);color:#fff;}
+.btn-save:disabled{background:#B9C6E6;}
+.btn-delete{background:#FDEDEB;color:var(--danger);}
+.btn-cancel{background:#F1F3F7;color:var(--muted);}
+.hidden{display:none !important;}
+
+.setup-screen{
+  padding:40px 24px;
+  text-align:center;
+}
+.setup-screen h2{font-size:18px;margin-bottom:10px;}
+.setup-screen p{font-size:14px;color:var(--muted);line-height:1.6;}
+
+.log-section{
+  margin:0 12px 12px;
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:12px;
+  overflow:hidden;
+}
+.log-header{
+  padding:10px 12px;
+  font-size:12.5px;
+  font-weight:700;
+  border-bottom:1px solid var(--border);
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+}
+.log-header .log-user-btn{
+  font-size:11px;
+  font-weight:600;
+  color:var(--blue);
+  background:var(--blue-soft);
+  border:none;
+  padding:4px 8px;
+  border-radius:7px;
+  cursor:pointer;
+}
+.log-list{
+  max-height:220px;
+  overflow-y:auto;
+  padding:8px 10px;
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+}
+.log-empty{
+  text-align:center;
+  color:var(--muted);
+  font-size:12px;
+  padding:12px 0;
+}
+.log-item{
+  font-size:11.5px;
+  line-height:1.4;
+  color:var(--text);
+  background:var(--bg);
+  border-radius:8px;
+  padding:6px 8px;
+}
+.log-author{
+  font-weight:700;
+  color:var(--navy);
+  margin-right:2px;
+}
+.log-time{
+  display:block;
+  font-size:10px;
+  color:var(--muted);
+  margin-top:2px;
+}
+
+.bulk-open-btn{
+  display:block;
+  width:calc(100% - 24px);
+  margin:10px 12px 0;
+  padding:12px;
+  border-radius:12px;
+  border:1.5px dashed var(--blue);
+  background:transparent;
+  color:var(--blue);
+  font-weight:700;
+  font-size:13.5px;
+  cursor:pointer;
+}
+
+.excel-btn-row{
+  display:flex;
+  gap:8px;
+  margin:8px 12px 0;
+}
+.excel-btn{
+  flex:1;
+  padding:10px;
+  border-radius:10px;
+  border:1px solid var(--border);
+  background:var(--card);
+  color:var(--navy);
+  font-weight:700;
+  font-size:12.5px;
+  cursor:pointer;
+}
+
+.bulk-tool{
+  background:var(--bg);
+  border:1px solid var(--border);
+  border-radius:12px;
+  padding:12px;
+  margin-bottom:14px;
+}
+.bulk-tool-title{
+  font-size:13px;
+  font-weight:700;
+  margin-bottom:10px;
+}
+.bulk-hint{
+  font-size:11.5px;
+  color:var(--muted);
+  margin-bottom:8px;
+  line-height:1.5;
+}
+.bulk-tool textarea{
+  width:100%;
+  border:1px solid var(--border);
+  border-radius:8px;
+  padding:10px;
+  font-size:13px;
+  background:#FBFCFE;
+  resize:vertical;
+  margin-bottom:8px;
+  font-family:inherit;
+}
+.btn-block{
+  width:100%;
+  padding:11px;
+  border-radius:8px;
+  border:none;
+  background:var(--blue-soft);
+  color:var(--blue);
+  font-weight:700;
+  font-size:13.5px;
+  cursor:pointer;
+}
+.bulk-table-wrap{
+  overflow-x:auto;
+  border:1px solid var(--border);
+  border-radius:10px;
+  margin-top:4px;
+}
+.bulk-table-inner{
+  min-width:600px;
+}
+.bulk-table-head, .bulk-row{
+  display:grid;
+  grid-template-columns:90px 1fr 66px 66px 90px 30px;
+  gap:6px;
+  padding:7px 8px;
+  align-items:center;
+}
+.bulk-table-head{
+  font-size:11px;
+  color:var(--muted);
+  font-weight:700;
+  border-bottom:1px solid var(--border);
+  background:var(--bg);
+}
+.bulk-row{
+  border-bottom:1px solid var(--border);
+}
+.bulk-row:last-child{border-bottom:none;}
+.bulk-row input, .bulk-row select{
+  width:100%;
+  padding:7px 6px;
+  font-size:12.5px;
+  border:1px solid var(--border);
+  border-radius:6px;
+  background:#FBFCFE;
+}
+.row-del{
+  border:none;
+  background:none;
+  color:var(--danger);
+  font-size:17px;
+  font-weight:700;
+  cursor:pointer;
+}
+.bulk-addrow-btn{
+  width:100%;
+  padding:11px;
+  text-align:center;
+  color:var(--blue);
+  font-weight:600;
+  font-size:13.5px;
+  background:var(--blue-soft);
+  border:none;
+  border-radius:8px;
+  margin-top:8px;
+  cursor:pointer;
+}
+</style>
+</head>
+<body>
+
+<div id="setupScreen" class="setup-screen hidden">
+  <h2>파이어베이스 설정이 필요하다</h2>
+  <p>이 파일 맨 아래 firebaseConfig 부분에 본인의 파이어베이스 프로젝트 키를 넣어야 여러 명이 데이터를 공유할 수 있다. 채팅에 안내된 방법대로 설정해라</p>
+</div>
+
+<div id="appRoot" class="hidden">
+
+<header>
+  <div class="brand"><span class="status-dot" id="statusDot"></span> SEROGOCHIM · 실시간 동기화</div>
+  <div class="header-top">
+    <h1>새로고침 재고관리</h1>
+    <button type="button" class="user-chip empty" id="userChip">이름 정하기</button>
+  </div>
+  <div class="summary-row">
+    <div class="summary-box">
+      <div class="label">전체 품목</div>
+      <div class="value" id="sumItemCount">0개</div>
+    </div>
+    <div class="summary-box">
+      <div class="label">재고 총액</div>
+      <div class="value" id="sumTotalValue">0원</div>
+    </div>
+  </div>
+</header>
+
+<div class="search-wrap">
+  <div class="search-box" id="searchBox">
+    <input type="text" id="searchInput" placeholder="제품명으로 검색" autocomplete="off" enterkeyhint="search">
+    <div class="search-history" id="searchHistory"></div>
+  </div>
+  <button class="bulk-open-btn" id="btnBulkAdd">+ 여러 상품 한번에 등록 (엑셀 스타일)</button>
+  <div class="excel-btn-row">
+    <button class="excel-btn" id="btnExcelDownload">엑셀로 전체 다운로드</button>
+    <button class="excel-btn" id="btnExcelUpload">엑셀 업로드로 수정</button>
+  </div>
+  <input type="file" id="excelUploadInput" accept=".xlsx,.xls,.csv" class="hidden">
+</div>
+
+<div class="container" id="catList"></div>
+
+<div class="log-section">
+  <div class="log-header">
+    <span>변경 기록</span>
+  </div>
+  <div class="log-list" id="logList"></div>
+</div>
+
+<div class="fab-row">
+  <button class="fab ghost" id="btnAddCategory">+ 분류 추가</button>
+  <button class="fab primary" id="btnAddItemGlobal">+ 상품 추가</button>
+</div>
+
+</div>
+
+<!-- 사용자 이름 설정 시트 -->
+<div class="overlay" id="nameOverlay">
+  <div class="sheet">
+    <h2 id="nameSheetTitle">사용할 이름 정하기</h2>
+    <div class="name-hint">이 폰에 한 번만 정해두면 계속 이 이름으로 변경기록이 남아요. 이름을 정해야 재고 수정이 가능해요</div>
+    <div class="field">
+      <label>이름</label>
+      <input type="text" id="nameInput" placeholder="예) 사원1" maxlength="12" autocomplete="off" enterkeyhint="done">
+    </div>
+    <div class="sheet-btns">
+      <button class="btn-cancel" id="nameCancelBtn">보기만 할게요</button>
+      <button class="btn-save" id="nameSaveBtn">저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- 분류 추가 시트 -->
+<div class="overlay" id="catOverlay">
+  <div class="sheet">
+    <h2>새 분류 추가</h2>
+    <div class="field">
+      <label>분류명</label>
+      <input type="text" id="catNameInput" placeholder="예) 데코타일제품군">
+    </div>
+    <div class="sheet-btns">
+      <button class="btn-cancel" id="catCancelBtn">취소</button>
+      <button class="btn-save" id="catSaveBtn">추가</button>
+    </div>
+  </div>
+</div>
+
+<!-- 상품 추가/수정 시트 -->
+<div class="overlay" id="itemOverlay">
+  <div class="sheet">
+    <h2 id="itemSheetTitle">상품 추가</h2>
+    <div class="field">
+      <label>위치</label>
+      <input type="text" id="itemLocationInput" placeholder="예) 매장 A구역, 창고 2층">
+    </div>
+    <div class="field">
+      <label>분류</label>
+      <select id="itemCatSelect"></select>
+    </div>
+    <div class="field">
+      <label>제품명</label>
+      <input type="text" id="itemNameInput" placeholder="예) 데코타일1500">
+    </div>
+    <div class="field">
+      <label>수량단위</label>
+      <div class="unit-grid" id="unitGrid">
+        <div class="unit-opt" data-unit="개">개</div>
+        <div class="unit-opt" data-unit="롤">롤</div>
+        <div class="unit-opt" data-unit="박스">박스</div>
+        <div class="unit-opt" data-unit="묶음">묶음</div>
+      </div>
+    </div>
+    <div class="field">
+      <label>수량</label>
+      <input type="number" id="itemQtyInput" placeholder="예) 4.6" inputmode="decimal" step="any">
+    </div>
+    <div class="field">
+      <label>가격 (원)</label>
+      <input type="number" id="itemPriceInput" placeholder="예) 30000" inputmode="numeric">
+    </div>
+    <div class="sheet-btns">
+      <button class="btn-cancel" id="itemCancelBtn">취소</button>
+      <button class="btn-save" id="itemSaveBtn">저장</button>
+    </div>
+    <div class="sheet-btns hidden" id="itemMoveRow" style="gap:8px;">
+      <select id="itemQuickMoveSelect" style="flex:1;padding:12px 10px;border-radius:10px;border:1px solid var(--border);font-size:14px;background:#FBFCFE;"></select>
+      <button class="btn-block" id="itemQuickMoveBtn" style="flex:0 0 auto;padding:12px 16px;">이 상품만 이동</button>
+    </div>
+    <div class="sheet-btns hidden" id="itemDeleteRow">
+      <button class="btn-delete" id="itemDeleteBtn" style="width:100%">이 상품 삭제</button>
+    </div>
+  </div>
+</div>
+
+<!-- 여러 상품 한번에 등록 -->
+<div class="overlay" id="bulkOverlay">
+  <div class="sheet">
+    <h2>여러 상품 한번에 등록</h2>
+    <div class="field">
+      <label>분류</label>
+      <select id="bulkCatSelect"></select>
+    </div>
+
+    <div class="bulk-tool">
+      <div class="bulk-tool-title">빠른 생성 (예: 데코타일 1500, 2000, 3000)</div>
+      <div class="field">
+        <label>제품명 접두사</label>
+        <input type="text" id="bulkPrefixInput" placeholder="예) 데코타일">
+      </div>
+      <div class="field">
+        <label>변형 목록 (콤마로 구분)</label>
+        <input type="text" id="bulkVariantsInput" placeholder="예) 1500, 2000, 3000">
+      </div>
+      <div class="field">
+        <label>공통 수량단위</label>
+        <select id="bulkUnitSelect">
+          <option value="개">개</option>
+          <option value="롤">롤</option>
+          <option value="박스">박스</option>
+          <option value="묶음">묶음</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>공통 수량</label>
+        <input type="number" id="bulkQtyInput" placeholder="예) 4.6" inputmode="decimal" step="any">
+      </div>
+      <div class="field">
+        <label>공통 가격</label>
+        <input type="number" id="bulkPriceInput" placeholder="예) 30000" inputmode="numeric">
+      </div>
+      <div class="field">
+        <label>공통 위치 (선택)</label>
+        <input type="text" id="bulkLocationInput" placeholder="예) 창고 2층">
+      </div>
+      <button type="button" class="btn-block" id="bulkGenerateBtn">표에 추가</button>
+    </div>
+
+    <div class="bulk-tool">
+      <div class="bulk-tool-title">엑셀에서 복사해서 붙여넣기</div>
+      <div class="bulk-hint">한 줄에 위치, 제품명, 수량단위, 수량, 가격 순서로 탭이나 콤마로 구분해서 붙여넣어주세요. 위치는 비워둬도 된다</div>
+      <textarea id="bulkPasteArea" rows="4" placeholder="A구역	데코타일1500	박스	350	30000"></textarea>
+      <button type="button" class="btn-block" id="bulkPasteBtn">표에 추가</button>
+    </div>
+
+    <div class="bulk-table-wrap">
+      <div class="bulk-table-inner">
+        <div class="bulk-table-head">
+          <span>위치</span><span>제품명</span><span>단위</span><span>수량</span><span>가격</span><span></span>
+        </div>
+        <div id="bulkTableBody"></div>
+      </div>
+    </div>
+    <button type="button" class="bulk-addrow-btn" id="bulkAddRowBtn">+ 빈 행 추가</button>
+
+    <div class="sheet-btns">
+      <button class="btn-cancel" id="bulkCancelBtn">취소</button>
+      <button class="btn-save" id="bulkSaveBtn">전체 저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- 분류 상품 전체 이동 -->
+<div class="overlay" id="moveCatOverlay">
+  <div class="sheet">
+    <h2 id="moveCatTitle">상품 전체 이동</h2>
+    <div class="field">
+      <label>이동할 분류</label>
+      <select id="moveCatTargetSelect"></select>
+    </div>
+    <div class="sheet-btns">
+      <button class="btn-cancel" id="moveCatCancelBtn">취소</button>
+      <button class="btn-save" id="moveCatConfirmBtn">이동</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
+import {
+  getFirestore, collection, doc, addDoc, updateDoc, deleteDoc,
+  onSnapshot, query, orderBy, limitToLast, writeBatch, deleteField,
+  serverTimestamp
+} from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
+
+/* ====================================================================
+   여기에 본인의 파이어베이스 프로젝트 설정값을 채워넣어라.
+   채팅에 안내된 순서대로 파이어베이스 콘솔에서 프로젝트를 만들고
+   웹앱을 등록하면 아래와 똑같이 생긴 값을 받는다.
+==================================================================== */
+const firebaseConfig = {
+  apiKey: "AIzaSyCNpACKBrRc4e0aZcy4yindQPIHSMcOp50",
+  authDomain: "serogochim-inventory.firebaseapp.com",
+  projectId: "serogochim-inventory",
+  storageBucket: "serogochim-inventory.firebasestorage.app",
+  messagingSenderId: "881089077673",
+  appId: "1:881089077673:web:9981db337464535f1ee4b8"
+};
+/* ==================================================================== */
+
+const isConfigured = !firebaseConfig.apiKey.includes("여기에");
+
+if(!isConfigured){
+  document.getElementById('setupScreen').classList.remove('hidden');
+} else {
+  document.getElementById('appRoot').classList.remove('hidden');
+  runApp();
+}
+
+function runApp(){
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+const categoriesCol = collection(db, 'categories');
+const itemsCol = collection(db, 'items');
+const logsCol = collection(db, 'logs');
+
+let categories = [];
+let items = [];
+let logs = [];
+let openState = {};
+let editingItemId = null;
+let editingItemCatId = null;
+let selectedUnit = '개';
+
+// 사용자 이름 (폰마다 따로 저장됨)
+const USER_KEY = 'serogochim_user_name';
+const nameOverlay = document.getElementById('nameOverlay');
+const nameInput = document.getElementById('nameInput');
+const userChip = document.getElementById('userChip');
+
+function loadUserName(){
+  try{ return (localStorage.getItem(USER_KEY) || '').trim(); }catch(e){ return ''; }
+}
+function storeUserName(n){
+  try{ localStorage.setItem(USER_KEY, n); return true; }catch(e){ return false; }
+}
+
+let userName = loadUserName();
+
+function updateUserChip(){
+  userChip.textContent = userName ? userName : '이름 정하기';
+  userChip.classList.toggle('empty', !userName);
+}
+
+function openNameSheet(){
+  document.getElementById('nameSheetTitle').textContent = userName ? '이름 변경' : '사용할 이름 정하기';
+  document.getElementById('nameCancelBtn').textContent = userName ? '취소' : '보기만 할게요';
+  nameInput.value = userName;
+  nameOverlay.classList.add('open');
+  setTimeout(()=> nameInput.focus(), 150);
+}
+
+function requireName(){
+  if(userName) return true;
+  alert('이름을 먼저 정해야 재고를 수정할 수 있어요');
+  openNameSheet();
+  return false;
+}
+
+async function saveUserName(){
+  const n = nameInput.value.trim();
+  if(!n){ alert('이름을 입력해주세요'); return; }
+  if(n.length > 12){ alert('이름은 12자 이내로 해주세요'); return; }
+
+  const oldName = userName;
+  if(!storeUserName(n)){
+    alert('이 브라우저에서는 이름 저장이 안 돼요. 시크릿모드가 아닌 일반 창으로 접속해주세요');
+    return;
+  }
+  userName = n;
+  updateUserChip();
+  nameOverlay.classList.remove('open');
+
+  if(oldName && oldName !== n){
+    addLog(`[이름 변경] "${oldName}" → "${n}"`);
+  }
+}
+
+userChip.addEventListener('click', openNameSheet);
+document.getElementById('nameSaveBtn').addEventListener('click', saveUserName);
+document.getElementById('nameCancelBtn').addEventListener('click', ()=> nameOverlay.classList.remove('open'));
+nameOverlay.addEventListener('click', (e)=>{ if(e.target === nameOverlay) nameOverlay.classList.remove('open'); });
+nameInput.addEventListener('keydown', (e)=>{
+  if(e.key === 'Enter'){ e.preventDefault(); saveUserName(); }
+});
+
+updateUserChip();
+if(!userName) openNameSheet();
+
+async function addLog(message){
+  try{
+    await addDoc(logsCol, { message, author: userName || '이름없음', createdAt: serverTimestamp() });
+  }catch(e){ console.error(e); }
+}
+
+function setStatus(online){
+  const dot = document.getElementById('statusDot');
+  dot.className = 'status-dot ' + (online ? 'online' : 'offline');
+}
+window.addEventListener('online', ()=>setStatus(true));
+window.addEventListener('offline', ()=>setStatus(false));
+setStatus(navigator.onLine);
+
+onSnapshot(categoriesCol, (snap)=>{
+  categories = snap.docs.map(d=>({ id:d.id, ...d.data() }));
+  render();
+}, (err)=>{ console.error(err); });
+
+onSnapshot(query(itemsCol, orderBy('createdAt','asc')), (snap)=>{
+  items = snap.docs.map(d=>({ id:d.id, ...d.data() }));
+  render();
+}, (err)=>{ console.error(err); });
+
+onSnapshot(query(logsCol, orderBy('createdAt','asc'), limitToLast(60)), (snap)=>{
+  logs = snap.docs.map(d=>({ id:d.id, ...d.data() }));
+  renderLogs();
+}, (err)=>{ console.error(err); });
+
+function renderLogs(){
+  const listEl = document.getElementById('logList');
+  if(logs.length === 0){
+    listEl.innerHTML = '<div class="log-empty">아직 변경 기록이 없다</div>';
+    return;
+  }
+  listEl.innerHTML = logs.map(l=>{
+    const t = l.createdAt && l.createdAt.toDate ? l.createdAt.toDate() : null;
+    const timeStr = t ? t.toLocaleString('ko-KR', { month:'numeric', day:'numeric', hour:'2-digit', minute:'2-digit' }) : '전송중';
+    const authorHtml = l.author ? `<span class="log-author">${escapeHtml(l.author)}</span>` : '';
+    return `<div class="log-item">${authorHtml}${escapeHtml(l.message||'')}<span class="log-time">${timeStr}</span></div>`;
+  }).join('');
+  listEl.scrollTop = listEl.scrollHeight;
+}
+
+function formatWon(n){
+  return Math.round(Number(n||0)).toLocaleString('ko-KR') + '원';
+}
+
+// 수량은 소수점 둘째 자리까지 표시 (예: 4.6박스, 2.25롤)
+function roundQty(n){
+  return Math.round(Number(n||0) * 100) / 100;
+}
+function formatQty(n){
+  return roundQty(n).toLocaleString('ko-KR', { maximumFractionDigits: 2 });
+}
+
+function escapeHtml(str){
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+async function moveCategory(sortedList, catId, direction){
+  const idx = sortedList.findIndex(c=>c.id === catId);
+  const targetIdx = idx + direction;
+  if(targetIdx < 0 || targetIdx >= sortedList.length) return;
+
+  const current = sortedList[idx];
+  const target = sortedList[targetIdx];
+  const currentOrder = current.order !== undefined ? current.order : idx;
+  const targetOrder = target.order !== undefined ? target.order : targetIdx;
+
+  const batch = writeBatch(db);
+  batch.update(doc(db,'categories', current.id), { order: targetOrder });
+  batch.update(doc(db,'categories', target.id), { order: currentOrder });
+  await batch.commit();
+}
+
+function sortCategoryItems(catItemsList){
+  const hasOrder = catItemsList.some(i=>i.order !== undefined);
+  if(!hasOrder){
+    return catItemsList.slice().sort((a,b)=> a.name.localeCompare(b.name, 'ko'));
+  }
+  return catItemsList.slice().sort((a,b)=>{
+    const oa = a.order !== undefined ? a.order : Infinity;
+    const ob = b.order !== undefined ? b.order : Infinity;
+    if(oa !== ob) return oa - ob;
+    return a.name.localeCompare(b.name, 'ko');
+  });
+}
+
+function computeInsertOrder(catItemsList, name){
+  const hasOrder = catItemsList.some(i=>i.order !== undefined);
+  if(!hasOrder) return undefined;
+
+  const sorted = sortCategoryItems(catItemsList);
+  let insertIdx = sorted.findIndex(i => name.localeCompare(i.name, 'ko') < 0);
+  if(insertIdx === -1) insertIdx = sorted.length;
+
+  const prev = insertIdx > 0 ? sorted[insertIdx-1] : null;
+  const next = insertIdx < sorted.length ? sorted[insertIdx] : null;
+  const prevOrder = prev ? (prev.order !== undefined ? prev.order : insertIdx-1) : null;
+  const nextOrder = next ? (next.order !== undefined ? next.order : insertIdx) : null;
+
+  if(prevOrder === null && nextOrder === null) return 0;
+  if(prevOrder === null) return nextOrder - 1;
+  if(nextOrder === null) return prevOrder + 1;
+  return (prevOrder + nextOrder) / 2;
+}
+
+async function moveItem(sortedList, itemId, direction){
+  const idx = sortedList.findIndex(i=>i.id === itemId);
+  const targetIdx = idx + direction;
+  if(targetIdx < 0 || targetIdx >= sortedList.length) return;
+
+  const batch = writeBatch(db);
+
+  // 이 분류에서 처음으로 순서를 바꾸는 경우, 지금 보이는 가나다순 그대로를 고정값으로 저장해둔다
+  sortedList.forEach((it, i)=>{
+    if(it.order === undefined){
+      batch.update(doc(db,'items', it.id), { order: i });
+      it.order = i;
+    }
+  });
+
+  const current = sortedList[idx];
+  const target = sortedList[targetIdx];
+  const currentOrder = current.order;
+  const targetOrder = target.order;
+
+  batch.update(doc(db,'items', current.id), { order: targetOrder });
+  batch.update(doc(db,'items', target.id), { order: currentOrder });
+  await batch.commit();
+}
+
+function render(){
+  const search = document.getElementById('searchInput').value.trim().toLowerCase();
+  const listEl = document.getElementById('catList');
+  listEl.innerHTML = '';
+
+  let totalItems = 0;
+  let totalValue = 0;
+
+  const sortedCategories = categories.slice().sort((a,b)=>{
+    const oa = a.order !== undefined ? a.order : 0;
+    const ob = b.order !== undefined ? b.order : 0;
+    return oa - ob;
+  });
+
+  sortedCategories.forEach((cat, catIdx)=>{
+    const catItems = items.filter(i=>i.categoryId === cat.id);
+    catItems.forEach(it=>{
+      totalItems += 1;
+      totalValue += (Number(it.qty)||0) * (Number(it.price)||0);
+    });
+
+    const sortedCatItems = sortCategoryItems(catItems);
+    const filteredItems = sortedCatItems.filter(it => !search || it.name.toLowerCase().includes(search));
+    if(search && filteredItems.length === 0) return;
+
+    const isOpen = openState[cat.id] !== undefined ? openState[cat.id] : false;
+
+    const card = document.createElement('div');
+    card.className = 'cat-card';
+
+    const head = document.createElement('div');
+    head.className = 'cat-head';
+    head.innerHTML = `
+      <div>
+        <div class="cat-title">${escapeHtml(cat.name)}</div>
+        <div class="cat-count">${catItems.length}개 품목</div>
+      </div>
+      <div class="cat-head-right">
+        <div class="cat-move">
+          <button type="button" data-action="catup" ${catIdx===0 || search ? 'disabled' : ''}>▲</button>
+          <button type="button" data-action="catdown" ${catIdx===sortedCategories.length-1 || search ? 'disabled' : ''}>▼</button>
+        </div>
+        <button class="icon-btn" data-action="movecat" data-id="${cat.id}">이동</button>
+        <button class="icon-btn" data-action="delcat" data-id="${cat.id}">삭제</button>
+        <span class="chev ${isOpen?'open':''}">▾</span>
+      </div>
+    `;
+    head.addEventListener('click', (e)=>{
+      if(e.target.dataset.action === 'delcat' || e.target.dataset.action === 'catup' || e.target.dataset.action === 'catdown' || e.target.dataset.action === 'movecat') return;
+      openState[cat.id] = !isOpen;
+      render();
+    });
+
+    head.querySelector('[data-action="catup"]').addEventListener('click', (e)=>{
+      e.stopPropagation();
+      if(!requireName()) return;
+      moveCategory(sortedCategories, cat.id, -1);
+    });
+    head.querySelector('[data-action="catdown"]').addEventListener('click', (e)=>{
+      e.stopPropagation();
+      if(!requireName()) return;
+      moveCategory(sortedCategories, cat.id, 1);
+    });
+
+    head.querySelector('[data-action="movecat"]').addEventListener('click', (e)=>{
+      e.stopPropagation();
+      if(!requireName()) return;
+      openMoveCatSheet(cat.id, catItems.length);
+    });
+
+    head.querySelector('[data-action="delcat"]').addEventListener('click', async (e)=>{
+      e.stopPropagation();
+      if(!requireName()) return;
+      if(!confirm(cat.name + ' 분류를 삭제할까. 안의 상품도 함께 삭제된다')) return;
+      const batch = writeBatch(db);
+      items.filter(i=>i.categoryId === cat.id).forEach(i=>{
+        batch.delete(doc(db,'items', i.id));
+      });
+      batch.delete(doc(db,'categories', cat.id));
+      await batch.commit();
+      addLog(`[분류 삭제] "${cat.name}" (포함된 품목 ${catItems.length}개도 함께 삭제됨)`);
+    });
+
+    const body = document.createElement('div');
+    body.className = 'cat-body ' + (isOpen || search ? 'open' : '');
+
+    if(filteredItems.length === 0){
+      const empty = document.createElement('div');
+      empty.className = 'empty-cat';
+      empty.textContent = '등록된 상품이 없다';
+      body.appendChild(empty);
+    } else {
+      filteredItems.forEach((it, idx)=>{
+        const row = document.createElement('div');
+        row.className = 'item-row';
+        const locationHtml = it.location ? `<div class="item-location">${escapeHtml(it.location)}</div>` : '';
+        row.innerHTML = `
+          <div class="item-move">
+            <button type="button" data-action="up" ${idx===0 || search ? 'disabled' : ''}>▲</button>
+            <button type="button" data-action="down" ${idx===filteredItems.length-1 || search ? 'disabled' : ''}>▼</button>
+          </div>
+          <div class="item-left">
+            ${locationHtml}
+            <div class="item-name">${escapeHtml(it.name)}</div>
+            <div class="item-meta">${formatWon(it.price)}</div>
+          </div>
+          <div class="item-qty-big">${formatQty(it.qty)}${escapeHtml(it.unit)}</div>
+        `;
+        row.querySelector('[data-action="up"]').addEventListener('click', (e)=>{
+          e.stopPropagation();
+          if(!requireName()) return;
+          moveItem(sortedCatItems, it.id, -1);
+        });
+        row.querySelector('[data-action="down"]').addEventListener('click', (e)=>{
+          e.stopPropagation();
+          if(!requireName()) return;
+          moveItem(sortedCatItems, it.id, 1);
+        });
+        row.addEventListener('click', ()=> openItemSheet(cat.id, it.id));
+        body.appendChild(row);
+      });
+    }
+
+    const addBtn = document.createElement('button');
+    addBtn.className = 'add-item-btn';
+    addBtn.textContent = '+ ' + cat.name + '에 상품 추가';
+    addBtn.addEventListener('click', ()=> openItemSheet(cat.id, null));
+    body.appendChild(addBtn);
+
+    card.appendChild(head);
+    card.appendChild(body);
+    listEl.appendChild(card);
+  });
+
+  document.getElementById('sumItemCount').textContent = totalItems.toLocaleString('ko-KR') + '개';
+  document.getElementById('sumTotalValue').textContent = formatWon(totalValue);
+}
+
+// 분류 추가
+const catOverlay = document.getElementById('catOverlay');
+document.getElementById('btnAddCategory').addEventListener('click', ()=>{
+  if(!requireName()) return;
+  document.getElementById('catNameInput').value = '';
+  catOverlay.classList.add('open');
+});
+document.getElementById('catCancelBtn').addEventListener('click', ()=> catOverlay.classList.remove('open'));
+catOverlay.addEventListener('click', (e)=>{ if(e.target === catOverlay) catOverlay.classList.remove('open'); });
+document.getElementById('catSaveBtn').addEventListener('click', async ()=>{
+  const name = document.getElementById('catNameInput').value.trim();
+  if(!name){ alert('분류명을 입력해주세요'); return; }
+  await addDoc(categoriesCol, { name, order: categories.length, createdAt: serverTimestamp() });
+  addLog(`[분류 추가] "${name}"`);
+  catOverlay.classList.remove('open');
+});
+
+// 상품 추가/수정
+const itemOverlay = document.getElementById('itemOverlay');
+
+function populateCatSelect(selectedId){
+  const sel = document.getElementById('itemCatSelect');
+  sel.innerHTML = '';
+  categories.forEach(c=>{
+    const opt = document.createElement('option');
+    opt.value = c.id;
+    opt.textContent = c.name;
+    if(c.id === selectedId) opt.selected = true;
+    sel.appendChild(opt);
+  });
+}
+
+function setUnitSelection(unit){
+  selectedUnit = unit;
+  document.querySelectorAll('.unit-opt').forEach(el=>{
+    el.classList.toggle('selected', el.dataset.unit === unit);
+  });
+}
+
+document.querySelectorAll('.unit-opt').forEach(el=>{
+  el.addEventListener('click', ()=> setUnitSelection(el.dataset.unit));
+});
+
+function openItemSheet(catId, itemId){
+  if(!requireName()) return;
+  if(categories.length === 0){
+    alert('먼저 분류를 추가해라');
+    return;
+  }
+  editingItemCatId = catId;
+  editingItemId = itemId;
+
+  populateCatSelect(catId);
+
+  if(itemId){
+    const item = items.find(i=>i.id === itemId);
+    document.getElementById('itemSheetTitle').textContent = '상품 수정';
+    document.getElementById('itemLocationInput').value = item.location || '';
+    document.getElementById('itemNameInput').value = item.name;
+    document.getElementById('itemQtyInput').value = item.qty;
+    document.getElementById('itemPriceInput').value = item.price;
+    setUnitSelection(item.unit);
+    document.getElementById('itemDeleteRow').classList.remove('hidden');
+
+    const moveRow = document.getElementById('itemMoveRow');
+    const otherCats = categories.filter(c=>c.id !== catId);
+    if(otherCats.length > 0){
+      const moveSel = document.getElementById('itemQuickMoveSelect');
+      moveSel.innerHTML = '';
+      otherCats.forEach(c=>{
+        const opt = document.createElement('option');
+        opt.value = c.id;
+        opt.textContent = c.name;
+        moveSel.appendChild(opt);
+      });
+      moveRow.classList.remove('hidden');
+    } else {
+      moveRow.classList.add('hidden');
+    }
+  } else {
+    document.getElementById('itemMoveRow').classList.add('hidden');
+    document.getElementById('itemSheetTitle').textContent = '상품 추가';
+    document.getElementById('itemLocationInput').value = '';
+    document.getElementById('itemNameInput').value = '';
+    document.getElementById('itemQtyInput').value = '';
+    document.getElementById('itemPriceInput').value = '';
+    setUnitSelection('개');
+    document.getElementById('itemDeleteRow').classList.add('hidden');
+  }
+
+  itemOverlay.classList.add('open');
+}
+
+document.getElementById('btnAddItemGlobal').addEventListener('click', ()=>{
+  const firstCat = categories[0];
+  openItemSheet(firstCat ? firstCat.id : null, null);
+});
+
+document.getElementById('itemCancelBtn').addEventListener('click', ()=> itemOverlay.classList.remove('open'));
+itemOverlay.addEventListener('click', (e)=>{ if(e.target === itemOverlay) itemOverlay.classList.remove('open'); });
+
+document.getElementById('itemSaveBtn').addEventListener('click', async ()=>{
+  const location = document.getElementById('itemLocationInput').value.trim();
+  const name = document.getElementById('itemNameInput').value.trim();
+  const qty = roundQty(document.getElementById('itemQtyInput').value);
+  const price = Number(document.getElementById('itemPriceInput').value);
+  const catId = document.getElementById('itemCatSelect').value;
+
+  if(!name){ alert('제품명을 입력해라'); return; }
+  if(document.getElementById('itemQtyInput').value.trim() === '' || isNaN(qty)){ alert('수량을 입력해주세요'); return; }
+  if(!price && price !== 0){ alert('가격을 입력해라'); return; }
+
+  const saveBtn = document.getElementById('itemSaveBtn');
+  saveBtn.disabled = true;
+
+  try{
+    const catName = (categories.find(c=>c.id===catId) || {}).name || '';
+    if(editingItemId){
+      const oldItem = items.find(i=>i.id === editingItemId) || {};
+      const updatePayload = { location, name, unit:selectedUnit, qty, price, categoryId:catId };
+      if(oldItem.order === undefined){
+        const siblingItems = items.filter(i=>i.categoryId === catId && i.id !== editingItemId);
+        const insertOrder = computeInsertOrder(siblingItems, name);
+        if(insertOrder !== undefined) updatePayload.order = insertOrder;
+      }
+      await updateDoc(doc(db,'items', editingItemId), updatePayload);
+
+      const diffParts = [];
+      if(oldItem.name !== name){
+        diffParts.push(`제품명 "${oldItem.name}" → "${name}"`);
+      }
+      if(Number(oldItem.qty) !== qty || oldItem.unit !== selectedUnit){
+        diffParts.push(`수량 ${formatQty(oldItem.qty)}${oldItem.unit||''} → ${formatQty(qty)}${selectedUnit}`);
+      }
+      if(Number(oldItem.price) !== price){
+        diffParts.push(`가격 ${formatWon(oldItem.price)} → ${formatWon(price)}`);
+      }
+      if((oldItem.location||'') !== location){
+        diffParts.push(`위치 "${oldItem.location||'없음'}" → "${location||'없음'}"`);
+      }
+      if(oldItem.categoryId !== catId){
+        const oldCatName = (categories.find(c=>c.id===oldItem.categoryId) || {}).name || '알수없음';
+        diffParts.push(`분류 "${oldCatName}" → "${catName}"`);
+      }
+
+      if(diffParts.length > 0){
+        addLog(`[상품 수정] "${name}" : ${diffParts.join(' · ')}`);
+      }
+    } else {
+      const siblingItems = items.filter(i=>i.categoryId === catId);
+      const insertOrder = computeInsertOrder(siblingItems, name);
+      const newPayload = {
+        location, name, unit:selectedUnit, qty, price, categoryId:catId, createdAt: serverTimestamp()
+      };
+      if(insertOrder !== undefined) newPayload.order = insertOrder;
+      await addDoc(itemsCol, newPayload);
+      const locPart = location ? ` · 위치 ${location}` : '';
+      addLog(`[상품 추가] "${name}" (${catName} · ${formatQty(qty)}${selectedUnit} · ${formatWon(price)}${locPart})`);
+    }
+    itemOverlay.classList.remove('open');
+  } finally {
+    saveBtn.disabled = false;
+  }
+});
+
+document.getElementById('itemQuickMoveBtn').addEventListener('click', async ()=>{
+  const targetId = document.getElementById('itemQuickMoveSelect').value;
+  const item = items.find(i=>i.id === editingItemId);
+  if(!item || !targetId) return;
+
+  const targetCat = categories.find(c=>c.id === targetId);
+  const oldCat = categories.find(c=>c.id === item.categoryId);
+
+  await updateDoc(doc(db,'items', editingItemId), { categoryId: targetId, order: deleteField() });
+  addLog(`[상품 이동] "${item.name}" : "${oldCat ? oldCat.name : '알수없음'}" → "${targetCat.name}"`);
+
+  itemOverlay.classList.remove('open');
+});
+
+document.getElementById('itemDeleteBtn').addEventListener('click', async ()=>{
+  if(!confirm('이 상품을 삭제할까')) return;
+  const item = items.find(i=>i.id === editingItemId);
+  await deleteDoc(doc(db,'items', editingItemId));
+  if(item){
+    const catName = (categories.find(c=>c.id===item.categoryId) || {}).name || '';
+    addLog(`[상품 삭제] "${item.name}" (${catName} · ${formatQty(item.qty)}${item.unit||''} · ${formatWon(item.price)})`);
+  }
+  itemOverlay.classList.remove('open');
+});
+
+// 검색 + 검색기록 (기기마다 따로 저장됨)
+const searchInput = document.getElementById('searchInput');
+const searchBox = document.getElementById('searchBox');
+const historyEl = document.getElementById('searchHistory');
+const HISTORY_KEY = 'serogochim_search_history';
+const HISTORY_MAX = 20;
+let shownHistory = [];
+
+function loadHistory(){
+  try{
+    const v = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
+    return Array.isArray(v) ? v : [];
+  }catch(e){ return []; }
+}
+function saveHistory(list){
+  try{ localStorage.setItem(HISTORY_KEY, JSON.stringify(list)); }catch(e){}
+}
+function addHistory(term){
+  term = (term || '').trim();
+  if(!term) return;
+  let list = loadHistory().filter(t=>t !== term);
+  list.unshift(term);
+  if(list.length > HISTORY_MAX) list = list.slice(0, HISTORY_MAX);
+  saveHistory(list);
+}
+function removeHistory(term){
+  saveHistory(loadHistory().filter(t=>t !== term));
+}
+
+function hideHistory(){
+  historyEl.classList.remove('open');
+}
+
+function renderHistory(){
+  const kw = searchInput.value.trim().toLowerCase();
+  let list = loadHistory();
+  if(kw) list = list.filter(t=>t.toLowerCase().includes(kw) && t.toLowerCase() !== kw);
+  shownHistory = list;
+
+  if(list.length === 0){
+    if(kw){ hideHistory(); return; }
+    historyEl.innerHTML = '<div class="sh-empty">검색 기록이 없어요</div>';
+  } else {
+    historyEl.innerHTML =
+      `<div class="sh-head"><span>최근 검색</span><button type="button" class="sh-clear" data-act="clear">전체 삭제</button></div>` +
+      list.map((t, i)=>`
+        <div class="sh-item" data-act="pick" data-idx="${i}">
+          <span class="sh-term">${escapeHtml(t)}</span>
+          <button type="button" class="sh-del" data-act="del" data-idx="${i}">×</button>
+        </div>`).join('');
+  }
+  historyEl.classList.add('open');
+}
+
+function runSearch(term){
+  searchInput.value = term;
+  addHistory(term);
+  render();
+  hideHistory();
+  searchInput.blur();
+}
+
+searchInput.addEventListener('focus', renderHistory);
+searchInput.addEventListener('input', ()=>{
+  render();
+  renderHistory();
+});
+searchInput.addEventListener('keydown', (e)=>{
+  if(e.key === 'Enter'){
+    e.preventDefault();
+    runSearch(searchInput.value);
+  }
+});
+searchInput.addEventListener('blur', ()=>{
+  addHistory(searchInput.value);
+});
+
+// 기록 목록을 누를 때 검색칸 포커스가 풀리지 않게
+historyEl.addEventListener('mousedown', (e)=> e.preventDefault());
+
+historyEl.addEventListener('click', (e)=>{
+  const target = e.target.closest('[data-act]');
+  if(!target) return;
+  const act = target.dataset.act;
+
+  if(act === 'clear'){
+    if(!confirm('검색 기록을 전부 지울까요')) return;
+    saveHistory([]);
+    renderHistory();
+    return;
+  }
+  const term = shownHistory[Number(target.dataset.idx)];
+  if(term === undefined) return;
+
+  if(act === 'del'){
+    e.stopPropagation();
+    removeHistory(term);
+    renderHistory();
+  } else if(act === 'pick'){
+    runSearch(term);
+  }
+});
+
+// 검색칸 바깥을 누르면 기록창 닫기
+document.addEventListener('click', (e)=>{
+  if(!searchBox.contains(e.target)) hideHistory();
+});
+
+// 여러 상품 한번에 등록
+const bulkOverlay = document.getElementById('bulkOverlay');
+const bulkTableBody = document.getElementById('bulkTableBody');
+
+function populateBulkCatSelect(){
+  const sel = document.getElementById('bulkCatSelect');
+  sel.innerHTML = '';
+  categories.forEach(c=>{
+    const opt = document.createElement('option');
+    opt.value = c.id;
+    opt.textContent = c.name;
+    sel.appendChild(opt);
+  });
+}
+
+function bulkAddRow(data){
+  data = data || {};
+  const row = document.createElement('div');
+  row.className = 'bulk-row';
+  row.innerHTML = `
+    <input type="text" class="b-loc" value="${escapeHtml(data.location||'')}">
+    <input type="text" class="b-name" value="${escapeHtml(data.name||'')}">
+    <select class="b-unit">
+      <option value="개">개</option>
+      <option value="롤">롤</option>
+      <option value="박스">박스</option>
+      <option value="묶음">묶음</option>
+    </select>
+    <input type="number" class="b-qty" inputmode="decimal" step="any" value="${data.qty!==undefined && data.qty!=='' ? data.qty : ''}">
+    <input type="number" class="b-price" inputmode="numeric" value="${data.price!==undefined && data.price!=='' ? data.price : ''}">
+    <button type="button" class="row-del">×</button>
+  `;
+  row.querySelector('.b-unit').value = data.unit || '개';
+  row.querySelector('.row-del').addEventListener('click', ()=> row.remove());
+  bulkTableBody.appendChild(row);
+}
+
+document.getElementById('btnBulkAdd').addEventListener('click', ()=>{
+  if(!requireName()) return;
+  if(categories.length === 0){
+    alert('먼저 분류를 추가해주세요');
+    return;
+  }
+  populateBulkCatSelect();
+  bulkTableBody.innerHTML = '';
+  document.getElementById('bulkPrefixInput').value = '';
+  document.getElementById('bulkVariantsInput').value = '';
+  document.getElementById('bulkQtyInput').value = '';
+  document.getElementById('bulkPriceInput').value = '';
+  document.getElementById('bulkLocationInput').value = '';
+  document.getElementById('bulkPasteArea').value = '';
+  bulkAddRow();
+  bulkOverlay.classList.add('open');
+});
+
+document.getElementById('bulkCancelBtn').addEventListener('click', ()=> bulkOverlay.classList.remove('open'));
+bulkOverlay.addEventListener('click', (e)=>{ if(e.target === bulkOverlay) bulkOverlay.classList.remove('open'); });
+
+document.getElementById('bulkAddRowBtn').addEventListener('click', ()=> bulkAddRow());
+
+document.getElementById('bulkGenerateBtn').addEventListener('click', ()=>{
+  const prefix = document.getElementById('bulkPrefixInput').value.trim();
+  const variants = document.getElementById('bulkVariantsInput').value.split(',').map(s=>s.trim()).filter(Boolean);
+  if(variants.length === 0){ alert('변형 목록을 입력해주세요'); return; }
+  const unit = document.getElementById('bulkUnitSelect').value;
+  const qty = document.getElementById('bulkQtyInput').value;
+  const price = document.getElementById('bulkPriceInput').value;
+  const location = document.getElementById('bulkLocationInput').value.trim();
+
+  variants.forEach(v=>{
+    const name = prefix ? `${prefix} ${v}` : v;
+    bulkAddRow({ location, name, unit, qty, price });
+  });
+
+  document.getElementById('bulkVariantsInput').value = '';
+});
+
+document.getElementById('bulkPasteBtn').addEventListener('click', ()=>{
+  const raw = document.getElementById('bulkPasteArea').value;
+  const lines = raw.split('\n').map(l=>l.trim()).filter(Boolean);
+  if(lines.length === 0){ alert('붙여넣을 내용이 없어요'); return; }
+
+  lines.forEach(line=>{
+    const parts = line.includes('\t') ? line.split('\t') : line.split(',');
+    const cleaned = parts.map(p=>p.trim());
+    bulkAddRow({
+      location: cleaned[0] || '',
+      name: cleaned[1] || '',
+      unit: cleaned[2] || '개',
+      qty: cleaned[3] || '',
+      price: cleaned[4] || ''
+    });
+  });
+
+  document.getElementById('bulkPasteArea').value = '';
+});
+
+document.getElementById('bulkSaveBtn').addEventListener('click', async ()=>{
+  const catId = document.getElementById('bulkCatSelect').value;
+  const catName = (categories.find(c=>c.id===catId) || {}).name || '';
+  const rows = Array.from(bulkTableBody.querySelectorAll('.bulk-row'));
+
+  const validRows = [];
+  let hasInvalid = false;
+
+  rows.forEach(row=>{
+    const name = row.querySelector('.b-name').value.trim();
+    const location = row.querySelector('.b-loc').value.trim();
+    const unit = row.querySelector('.b-unit').value;
+    const qty = roundQty(row.querySelector('.b-qty').value);
+    const price = Number(row.querySelector('.b-price').value);
+
+    if(!name && !row.querySelector('.b-qty').value && !row.querySelector('.b-price').value) return;
+
+    if(!name || row.querySelector('.b-qty').value === '' || row.querySelector('.b-price').value === ''){
+      hasInvalid = true;
+      return;
+    }
+    validRows.push({ location, name, unit, qty, price });
+  });
+
+  if(hasInvalid){
+    alert('제품명, 수량, 가격이 빠진 행이 있어요. 확인해주세요');
+    return;
+  }
+  if(validRows.length === 0){
+    alert('등록할 상품이 없어요');
+    return;
+  }
+
+  const saveBtn = document.getElementById('bulkSaveBtn');
+  saveBtn.disabled = true;
+
+  try{
+    const batch = writeBatch(db);
+    const workingItems = items.filter(i=>i.categoryId === catId).slice();
+    validRows.forEach(r=>{
+      const ref = doc(itemsCol);
+      const insertOrder = computeInsertOrder(workingItems, r.name);
+      const payload = {
+        location: r.location, name: r.name, unit: r.unit, qty: r.qty, price: r.price,
+        categoryId: catId, createdAt: serverTimestamp()
+      };
+      if(insertOrder !== undefined) payload.order = insertOrder;
+      batch.set(ref, payload);
+      workingItems.push({ name: r.name, order: insertOrder });
+    });
+    await batch.commit();
+
+    const nameList = validRows.map(r=>r.name).join(', ');
+    addLog(`[일괄 등록] "${catName}"에 ${validRows.length}개 상품 추가됨: ${nameList}`);
+
+    bulkOverlay.classList.remove('open');
+  } finally {
+    saveBtn.disabled = false;
+  }
+});
+
+// 분류 상품 전체 이동
+const moveCatOverlay = document.getElementById('moveCatOverlay');
+let moveCatSourceId = null;
+
+function openMoveCatSheet(catId, itemCount){
+  if(itemCount === 0){
+    alert('이 분류에는 옮길 상품이 없어요');
+    return;
+  }
+  if(categories.length < 2){
+    alert('이동할 다른 분류가 없어요. 먼저 새 분류를 만들어주세요');
+    return;
+  }
+  moveCatSourceId = catId;
+  const sourceCat = categories.find(c=>c.id === catId);
+  document.getElementById('moveCatTitle').textContent = `"${sourceCat.name}" 상품 전체 이동 (${itemCount}개)`;
+
+  const sel = document.getElementById('moveCatTargetSelect');
+  sel.innerHTML = '';
+  categories.filter(c=>c.id !== catId).forEach(c=>{
+    const opt = document.createElement('option');
+    opt.value = c.id;
+    opt.textContent = c.name;
+    sel.appendChild(opt);
+  });
+
+  moveCatOverlay.classList.add('open');
+}
+
+document.getElementById('moveCatCancelBtn').addEventListener('click', ()=> moveCatOverlay.classList.remove('open'));
+moveCatOverlay.addEventListener('click', (e)=>{ if(e.target === moveCatOverlay) moveCatOverlay.classList.remove('open'); });
+
+document.getElementById('moveCatConfirmBtn').addEventListener('click', async ()=>{
+  const targetId = document.getElementById('moveCatTargetSelect').value;
+  const sourceCat = categories.find(c=>c.id === moveCatSourceId);
+  const targetCat = categories.find(c=>c.id === targetId);
+  const movingItems = items.filter(i=>i.categoryId === moveCatSourceId);
+
+  if(!confirm(`"${sourceCat.name}"에 있는 상품 ${movingItems.length}개를 "${targetCat.name}"로 옮길까요`)) return;
+
+  const confirmBtn = document.getElementById('moveCatConfirmBtn');
+  confirmBtn.disabled = true;
+
+  try{
+    const batch = writeBatch(db);
+    movingItems.forEach(it=>{
+      batch.update(doc(db,'items', it.id), { categoryId: targetId, order: deleteField() });
+    });
+    await batch.commit();
+
+    const nameList = movingItems.map(i=>i.name).join(', ');
+    addLog(`[분류 이동] "${sourceCat.name}"의 상품 ${movingItems.length}개를 "${targetCat.name}"로 이동함: ${nameList}`);
+
+    moveCatOverlay.classList.remove('open');
+  } finally {
+    confirmBtn.disabled = false;
+  }
+});
+
+// 엑셀 다운로드
+document.getElementById('btnExcelDownload').addEventListener('click', ()=>{
+  if(items.length === 0){ alert('등록된 상품이 없어요'); return; }
+
+  const withCatName = items.map(it=>({
+    it,
+    catName: (categories.find(c=>c.id===it.categoryId) || {}).name || ''
+  }));
+
+  withCatName.sort((a,b)=>{
+    const catCompare = a.catName.localeCompare(b.catName, 'ko');
+    if(catCompare !== 0) return catCompare;
+    const locCompare = (a.it.location||'').localeCompare(b.it.location||'', 'ko');
+    if(locCompare !== 0) return locCompare;
+    return a.it.name.localeCompare(b.it.name, 'ko');
+  });
+
+  const rows = withCatName.map(({it, catName})=>({
+    '분류': catName,
+    '위치': it.location || '',
+    '제품명': it.name,
+    '수량단위': it.unit,
+    '수량': it.qty,
+    '가격': it.price,
+    'ID(수정용, 건드리지 마세요)': it.id
+  }));
+
+  const ws = XLSX.utils.json_to_sheet(rows);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, '재고목록');
+  const dateStr = new Date().toISOString().slice(0,10);
+  XLSX.writeFile(wb, `새로고침_재고_${dateStr}.xlsx`);
+});
+
+// 엑셀 업로드로 일괄 수정
+document.getElementById('btnExcelUpload').addEventListener('click', ()=>{
+  if(!requireName()) return;
+  document.getElementById('excelUploadInput').click();
+});
+
+document.getElementById('excelUploadInput').addEventListener('change', async (e)=>{
+  const file = e.target.files[0];
+  if(!file) return;
+
+  if(!confirm('엑셀 내용대로 재고 정보를 수정, 추가할까요. ID가 있는 행은 수정되고 ID가 없는 새 행은 새 상품으로 추가돼요')){
+    e.target.value = '';
+    return;
+  }
+
+  try{
+    const buf = await file.arrayBuffer();
+    const wb = XLSX.read(buf, { type:'array' });
+    const sheet = wb.Sheets[wb.SheetNames[0]];
+    const rows = XLSX.utils.sheet_to_json(sheet, { defval:'' });
+
+    if(rows.length === 0){ alert('엑셀에 내용이 없어요'); e.target.value=''; return; }
+
+    const catNameToId = {};
+    categories.forEach(c=> catNameToId[c.name] = c.id);
+
+    const neededCatNames = [...new Set(rows.map(r=> String(r['분류']||'').trim()).filter(Boolean))];
+    let catOrderCursor = categories.length;
+    for(const name of neededCatNames){
+      if(!catNameToId[name]){
+        const ref = await addDoc(categoriesCol, { name, order: catOrderCursor, createdAt: serverTimestamp() });
+        catNameToId[name] = ref.id;
+        catOrderCursor += 1;
+      }
+    }
+
+    const validUnits = ['개','롤','박스','묶음'];
+    const workingItemsByCat = {};
+    const batch = writeBatch(db);
+    let updateCount = 0;
+    let addCount = 0;
+    let skipCount = 0;
+
+    rows.forEach(r=>{
+      const name = String(r['제품명']||'').trim();
+      if(!name){ skipCount++; return; }
+
+      const catName = String(r['분류']||'').trim();
+      const catId = catNameToId[catName] || categories[0]?.id;
+      if(!catId){ skipCount++; return; }
+
+      const location = String(r['위치']||'').trim();
+      const unitRaw = String(r['수량단위']||'개').trim();
+      const unit = validUnits.includes(unitRaw) ? unitRaw : '개';
+      const qty = roundQty(r['수량']) || 0;
+      const price = Number(r['가격']) || 0;
+      const idKey = Object.keys(r).find(k=>k.startsWith('ID'));
+      const id = idKey ? String(r[idKey]||'').trim() : '';
+
+      const existing = id ? items.find(i=>i.id === id) : null;
+
+      if(existing){
+        const changed = (
+          (existing.location||'') !== location ||
+          existing.name !== name ||
+          existing.unit !== unit ||
+          Number(existing.qty) !== qty ||
+          Number(existing.price) !== price ||
+          existing.categoryId !== catId
+        );
+        if(changed){
+          batch.update(doc(db,'items', existing.id), { location, name, unit, qty, price, categoryId: catId });
+          updateCount++;
+        }
+      } else {
+        if(!workingItemsByCat[catId]) workingItemsByCat[catId] = items.filter(i=>i.categoryId===catId).slice();
+        const insertOrder = computeInsertOrder(workingItemsByCat[catId], name);
+        const ref = doc(itemsCol);
+        const payload = { location, name, unit, qty, price, categoryId: catId, createdAt: serverTimestamp() };
+        if(insertOrder !== undefined) payload.order = insertOrder;
+        batch.set(ref, payload);
+        workingItemsByCat[catId].push({ name, order: insertOrder });
+        addCount++;
+      }
+    });
+
+    await batch.commit();
+    addLog(`[엑셀 업로드] 수정 ${updateCount}건, 신규 ${addCount}건 반영됨${skipCount>0 ? ` (제품명 없는 행 ${skipCount}개 제외)` : ''}`);
+    alert(`반영 완료. 수정 ${updateCount}건, 신규 추가 ${addCount}건`);
+  } catch(err){
+    console.error(err);
+    alert('엑셀 파일을 읽는 중 문제가 생겼어요. 다운로드한 형식 그대로 수정했는지 확인해주세요');
+  } finally {
+    e.target.value = '';
+  }
+});
+
+}
+</script>
+</body>
+</html>
