@@ -797,7 +797,6 @@ header h1{
   cursor:pointer;
 }
 </style>
-<style>.yard-slot,.yard-frame{height:calc(100vh - 250px)!important;height:calc(100dvh - 250px)!important;min-height:420px}</style>
 <script>/* 0.14 ?app=분류&n=이름 으로 열면 처음부터 그 분류 전용 설치 정보 */
 (function(){try{var q=new URLSearchParams(location.search),k=q.get('app'),n=q.get('n'),l=document.querySelector('link[rel="manifest"]');if(!k||k==='main'||!n||!l)return;
 var U='https://ds4eqm-lgtm.github.io/inventory/',h=(location.hash.match(/cat=([^&]+)/)||[])[1]||'',Q='?app='+encodeURIComponent(k);
@@ -817,7 +816,7 @@ l.setAttribute('href',URL.createObjectURL(new Blob([JSON.stringify(m)],{type:'ap
 <div class="upd-bar" id="updBar"><span id="updText">새 버전이 있습니다. 업데이트하시겠습니까?</span><button type="button" id="updGo">업데이트</button><button type="button" id="updLater">나중에</button></div>
 <header>
   <div class="header-top">
-    <div class="title-wrap"><h1 class="h1-ver"><span class="status-dot" id="statusDot"></span><span class="ver-tag">ver 0.14</span><span data-lbl="title">새로고침 재고관리</span></h1><div class="sync-line"><span class="sync-time" id="syncTime">동기화 중…</span><button type="button" class="sync-btn" id="btnSync" title="지금 최신 자료로 다시 맞추기">⟳ 동기화</button></div></div>
+    <div class="title-wrap"><h1 class="h1-ver"><span class="status-dot" id="statusDot"></span><span class="ver-tag">ver 0.15</span><span data-lbl="title">새로고침 재고관리</span></h1><div class="sync-line"><span class="sync-time" id="syncTime">동기화 중…</span><button type="button" class="sync-btn" id="btnSync" title="지금 최신 자료로 다시 맞추기">⟳ 동기화</button></div></div>
     <button type="button" class="user-chip empty" id="userChip">이름 정하기</button>
   </div>
   <button type="button" class="inst-btn" id="btnInst">바탕화면에 바로가기 만들기</button>
@@ -2631,6 +2630,10 @@ function appScBoot(n){ n = n || 0; if(!APPQ && !INSTQ) return;
       document.getElementById('instGo').textContent = '설치'; }
     else if(t >= 15){ clearInterval(iv); instHelp(); } }, 400); }
 setTimeout(appScBoot, 0);
+setTimeout(()=>{ if(/\/inventory\/test\//.test(location.pathname) && scStandalone && !shIOS){ let last = 0; try{ last = parseInt(localStorage.getItem('serogochim_oldapp_ask') || '0', 10) || 0; }catch(e){}
+  if(Date.now() - last > 20 * 3600 * 1000) setTimeout(()=>{ try{ localStorage.setItem('serogochim_oldapp_ask', String(Date.now())); }catch(e){}
+    instSheet('새 아이콘으로 바꾸시겠습니까?', '지금 쓰시는 아이콘은 예전 시험판 때 만든 것이라 창 제목에 "시험판"이 남아 있습니다.<br><br><b>[새 아이콘 설치]</b>를 누르면 새 탭에서 설치 창이 뜹니다. [설치]를 누르면 새 아이콘이 생깁니다.<br>그다음 이 창 오른쪽 위 <b>⋮</b> → <b>[제거]</b>로 예전 아이콘을 지우면 끝입니다. 재고 기록은 그대로입니다.', ()=>{ let w = null; try{ w = window.open(SHARE_URL + '?inst=1', '_blank'); }catch(e){} if(!w) location.href = SHARE_URL + '?inst=1'; });
+    document.getElementById('instGo').textContent = '새 아이콘 설치'; document.getElementById('instClose').textContent = '나중에'; }, 2500); } }, 0);
 window.addEventListener('appinstalled', ()=>{ instEv = null; shToast('바탕화면에 바로가기를 만들었습니다', 5000); });
 const scUA = navigator.userAgent;
 const scWin = /Windows NT/.test(scUA) && !/Android|iPhone|iPad/.test(scUA);
@@ -2796,13 +2799,20 @@ function applyDeepCat(){
 }
 
 // 0.5 새 버전 알림: 켤 때 version.json을 보고, 더 새 판이 있으면 왼쪽 위에 알림. [업데이트] 한 번이면 새 판으로 다시 열림 (재고 기록은 그대로)
-const APP_VER = '0.14';
+const APP_VER = '0.15';
 const VER_URL = 'https://ds4eqm-lgtm.github.io/inventory/version.json';
 function verNum(v){ const p = String(v||'0').split('.'); return [parseInt(p[0])||0, parseInt(p[1])||0]; }
 function verNewer(a, b){ const x = verNum(a), y = verNum(b); return x[0] > y[0] || (x[0] === y[0] && x[1] > y[1]); }
 function checkUpdate(){
   fetch(VER_URL + '?t=' + Date.now(), { cache:'no-store' }).then(r=> r.ok ? r.json() : null).then(j=>{
     if(!j || !j.ver || !verNewer(j.ver, APP_VER)) return;
+    let n = 0; try{ n = parseInt(sessionStorage.getItem('serogochim_auto_' + j.ver) || '0', 10) || 0; }catch(e){}
+    if(n < 2 && location.protocol !== 'file:'){ const go = ()=>{ const a = document.activeElement;
+        if(document.querySelector('.overlay.open') || (a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName))){ setTimeout(go, 5000); return; }
+        try{ sessionStorage.setItem('serogochim_auto_' + j.ver, String(n + 1)); }catch(e){}
+        const u = location.href.split('#')[0].split('?')[0];
+        location.replace(u + '?' + (APPQ ? 'app=' + encodeURIComponent(APPQ) + '&' : '') + 'v=' + encodeURIComponent(j.ver) + '&r=' + Date.now().toString(36) + (location.hash || '')); };
+      go(); return; }
     try{ if(sessionStorage.getItem('serogochim_upd_later') === j.ver) return; }catch(e){}
     const b = document.getElementById('updBar');
     document.getElementById('updText').textContent = `새 버전 ${j.ver}이 있습니다. 업데이트하시겠습니까?` + (j.note ? ` (${j.note})` : '');
