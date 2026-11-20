@@ -803,7 +803,7 @@ var U='https://ds4eqm-lgtm.github.io/inventory/',h=(location.hash.match(/cat=([^
 var m={id:U+Q,name:'새로고침 재고 - '+n,short_name:n,start_url:U+Q+'#cat='+h,scope:U,display:'standalone',background_color:'#ffffff',theme_color:'#1B6E4A',
 icons:[{src:U+'icon-192.png',sizes:'192x192',type:'image/png',purpose:'any'},{src:U+'icon-512.png',sizes:'512x512',type:'image/png',purpose:'any'}]};
 l.setAttribute('href',URL.createObjectURL(new Blob([JSON.stringify(m)],{type:'application/manifest+json'})));window.__appMf=k;}catch(e){}})();</script>
-<style>.cat-split{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px}.cat-split .cs-r{display:contents}.cat-split select{font-weight:800;color:#0f1a24}#itemOverlay .field label{font-size:15px;font-weight:800;color:#1b2733}#itemOverlay .field input,#itemOverlay .field select{font-weight:700;color:#0f1a24;font-size:18px}#itemOverlay h2{font-size:22px;font-weight:900}#itemOverlay .unit-opt{font-size:18px;font-weight:800;color:#0f1a24}#itemOverlay .unit-opt.selected,#itemOverlay .unit-opt.active{color:#fff}#itemOverlay .sheet-btns button{font-size:18px;font-weight:800}#itemQuickMoveSelect{flex:1 1 0!important;font-size:17px!important;font-weight:800;color:#0f1a24;min-width:0}#itemQuickMoveBtn{flex:1 1 0!important;min-width:0;white-space:nowrap;padding:12px 6px!important}#itemOverlay .btn-cancel{color:#33414e}.cat-split select{width:100%;min-width:0;padding-left:8px;padding-right:4px}.cat-split label{white-space:nowrap}.it-rp{display:inline-block;margin-left:6px;font-size:11.5px;font-weight:700;color:#1B6E4A;background:#E6F2EC;border-radius:6px;padding:1px 6px;vertical-align:middle}</style>
+<style>.cat-split{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px}.cat-split .cs-r{display:contents}.cat-split.two{grid-template-columns:1fr 1fr}.cat-split.two #parkWrap{display:none}.cat-split select{font-weight:800;color:#0f1a24}#itemOverlay .field label{font-size:15px;font-weight:800;color:#1b2733}#itemOverlay .field input,#itemOverlay .field select{font-weight:700;color:#0f1a24;font-size:18px}#itemOverlay h2{font-size:22px;font-weight:900}#itemOverlay .unit-opt{font-size:18px;font-weight:800;color:#0f1a24}#itemOverlay .unit-opt.selected,#itemOverlay .unit-opt.active{color:#fff}#itemOverlay .sheet-btns button{font-size:18px;font-weight:800}#itemQuickMoveSelect{flex:1 1 0!important;font-size:17px!important;font-weight:800;color:#0f1a24;min-width:0}#itemQuickMoveBtn{flex:1 1 0!important;min-width:0;white-space:nowrap;padding:12px 6px!important}#itemOverlay .btn-cancel{color:#33414e}.cat-split select{width:100%;min-width:0;padding-left:8px;padding-right:4px}.cat-split label{white-space:nowrap}.it-rp{display:inline-block;margin-left:6px;font-size:11.5px;font-weight:700;color:#1B6E4A;background:#E6F2EC;border-radius:6px;padding:1px 6px;vertical-align:middle}</style>
 <style>@keyframes onBlink{0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(61,220,132,.75)}50%{opacity:.35;box-shadow:0 0 0 4px rgba(61,220,132,0)}}
 .status-dot.online{animation:onBlink 2s ease-in-out infinite;animation-delay:var(--ph,0ms)}
 .online-row .on-chip::before{animation:onBlink 2s ease-in-out infinite;animation-delay:var(--ph,0ms)}
@@ -821,7 +821,7 @@ l.setAttribute('href',URL.createObjectURL(new Blob([JSON.stringify(m)],{type:'ap
 <div class="upd-bar" id="updBar"><span id="updText">새 버전이 있습니다. 업데이트하시겠습니까?</span><button type="button" id="updGo">업데이트</button><button type="button" id="updLater">나중에</button></div>
 <header>
   <div class="header-top">
-    <div class="title-wrap"><h1 class="h1-ver"><span class="status-dot" id="statusDot"></span><span class="ver-tag">ver 0.18</span><span data-lbl="title">새로고침 재고관리</span></h1><div class="sync-line"><span class="sync-time" id="syncTime">동기화 중…</span><button type="button" class="sync-btn" id="btnSync" title="지금 최신 자료로 다시 맞추기">⟳ 동기화</button></div></div>
+    <div class="title-wrap"><h1 class="h1-ver"><span class="status-dot" id="statusDot"></span><span class="ver-tag">ver 0.19</span><span data-lbl="title">새로고침 재고관리</span></h1><div class="sync-line"><span class="sync-time" id="syncTime">동기화 중…</span><button type="button" class="sync-btn" id="btnSync" title="지금 최신 자료로 다시 맞추기">⟳ 동기화</button></div></div>
     <button type="button" class="user-chip empty" id="userChip">이름 정하기</button>
   </div>
   <button type="button" class="inst-btn" id="btnInst">바탕화면에 바로가기 만들기</button>
@@ -971,7 +971,7 @@ l.setAttribute('href',URL.createObjectURL(new Blob([JSON.stringify(m)],{type:'ap
     </div>
     <div class="field cat-split">
       <div class="cs-l"><label>분류</label><select id="itemCatSelect"></select></div>
-      <div class="cs-r"><div><label>렉 번호</label><select id="itemRackSelect"><option value="">없음</option></select></div><div><label>주차장 렉 번호</label><select id="itemParkSelect"><option value="">없음</option></select></div></div>
+      <div class="cs-r"><div><label>렉 번호</label><select id="itemRackSelect"><option value="">없음</option></select></div><div id="parkWrap"><label>주차장 렉 번호</label><select id="itemParkSelect"><option value="">없음</option></select></div></div>
     </div>
     <div class="field">
       <label>제품명</label>
@@ -1257,6 +1257,9 @@ setTimeout(applyLbls, 0);
   for(let i = 1; i <= 40; i++){ const o = document.createElement('option'); o.value = String(i); o.textContent = i + '번'; r.appendChild(o); }
   for(let i = 1; i <= 20; i++){ const o = document.createElement('option'); o.value = String(i); o.textContent = i + '번'; p.appendChild(o); } })();
 // 세 칸 글자: 칸 안에 들어가는 만큼 크게
+function isParkCat(catId){ const c = categories.find(x=>x.id === catId); return !!c && /10번창고/.test(String(c.name||'').replace(/\s+/g,'')); }
+function syncPark(){ const on = isParkCat(document.getElementById('itemCatSelect').value); document.querySelector('#itemOverlay .cat-split').classList.toggle('two', !on); if(!on) document.getElementById('itemParkSelect').value = ''; fitSplit(); }
+document.addEventListener('change', e=>{ if(e.target && e.target.id === 'itemCatSelect') syncPark(); });
 function fitSplit(){ const cv = fitSplit.c || (fitSplit.c = document.createElement('canvas').getContext('2d'));
   document.querySelectorAll('#itemOverlay .cat-split select').forEach(sel=>{ const w = sel.clientWidth - 34; if(w <= 0) return; const t = (sel.options[sel.selectedIndex] || {}).text || ''; let f = 24;
     const ff = getComputedStyle(sel).fontFamily; for(; f > 12; f--){ cv.font = '800 ' + f + 'px ' + ff; if(cv.measureText(t).width <= w) break; } sel.style.fontSize = f + 'px'; }); }
@@ -1662,7 +1665,7 @@ function render(){ requestAnimationFrame(()=>{ try{ placeYard(); }catch(e){} });
       filteredItems.forEach((it, idx)=>{
         const row = document.createElement('div');
         row.className = 'item-row';
-        const rpTxt = [it.rack ? (it.rack === 'floor' ? '렉 바닥' : '렉 ' + it.rack + '번') : '', it.park ? (it.park === 'floor' ? '주차장 바닥' : '주차장 렉 ' + it.park + '번') : ''].filter(Boolean).join(' · ');
+        const rpTxt = [it.rack ? (it.rack === 'floor' ? '렉 바닥' : '렉 ' + it.rack + '번') : '', (it.park && isParkCat(cat.id)) ? (it.park === 'floor' ? '주차장 바닥' : '주차장 렉 ' + it.park + '번') : ''].filter(Boolean).join(' · ');
         const locationHtml = (it.location || rpTxt) ? `<div class="item-location">${escapeHtml(it.location || '')}${rpTxt ? '<span class="it-rp">' + escapeHtml(rpTxt) + '</span>' : ''}</div>` : '';
         row.innerHTML = `
           <div class="item-move">
@@ -1802,7 +1805,7 @@ function openItemSheet(catId, itemId){
     document.getElementById('itemDeleteRow').classList.add('hidden');
   }
 
-  itemOverlay.classList.add('open'); setTimeout(fitSplit, 30);
+  itemOverlay.classList.add('open'); setTimeout(syncPark, 30);
 }
 
 document.getElementById('btnAddItemGlobal').addEventListener('click', ()=>{
@@ -1839,7 +1842,7 @@ document.getElementById('itemSaveBtn').addEventListener('click', async ()=>{
         if(!ok){ openItemSheet(nowItem.categoryId, nowItem.id); return; }
       }
       const oldItem = nowItem;
-      const rack = document.getElementById('itemRackSelect').value, park = document.getElementById('itemParkSelect').value;
+      const rack = document.getElementById('itemRackSelect').value, park = isParkCat(catId) ? document.getElementById('itemParkSelect').value : '';
       const updatePayload = { location, name, unit:selectedUnit, qty, price, categoryId:catId, rack, park, by: userName || '이름없음' };
       if(oldItem.order === undefined){
         const siblingItems = items.filter(i=>i.categoryId === catId && i.id !== editingItemId);
@@ -1877,7 +1880,7 @@ document.getElementById('itemSaveBtn').addEventListener('click', async ()=>{
       const siblingItems = items.filter(i=>i.categoryId === catId);
       const insertOrder = computeInsertOrder(siblingItems, name);
       const newPayload = {
-        location, name, unit:selectedUnit, qty, price, categoryId:catId, rack: document.getElementById('itemRackSelect').value, park: document.getElementById('itemParkSelect').value, by: userName || '이름없음', createdAt: serverTimestamp()
+        location, name, unit:selectedUnit, qty, price, categoryId:catId, rack: document.getElementById('itemRackSelect').value, park: isParkCat(catId) ? document.getElementById('itemParkSelect').value : '', by: userName || '이름없음', createdAt: serverTimestamp()
       };
       if(insertOrder !== undefined) newPayload.order = insertOrder;
       await snapUndo([catId], `상품 추가: "${name}"`);
@@ -2838,7 +2841,7 @@ function applyDeepCat(){
 }
 
 // 0.5 새 버전 알림: 켤 때 version.json을 보고, 더 새 판이 있으면 왼쪽 위에 알림. [업데이트] 한 번이면 새 판으로 다시 열림 (재고 기록은 그대로)
-const APP_VER = '0.18';
+const APP_VER = '0.19';
 const VER_URL = 'https://ds4eqm-lgtm.github.io/inventory/version.json';
 function verNum(v){ const p = String(v||'0').split('.'); return [parseInt(p[0])||0, parseInt(p[1])||0]; }
 function verNewer(a, b){ const x = verNum(a), y = verNum(b); return x[0] > y[0] || (x[0] === y[0] && x[1] > y[1]); }
