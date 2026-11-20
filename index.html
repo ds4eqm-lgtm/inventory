@@ -213,6 +213,10 @@ header h1{
 .upd-bar span{flex:1;text-align:left;}
 .upd-bar button{border:none;border-radius:8px;padding:7px 11px;font-size:13px;font-weight:800;cursor:pointer;}
 #updGo{background:#1B6E4A;color:#fff}#updLater{background:rgba(0,0,0,.08);color:#16202A}
+[data-lbl],.cat-title{position:relative;}
+.hold5{background-image:linear-gradient(90deg,rgba(224,122,31,.35),rgba(224,122,31,.35));background-repeat:no-repeat;background-size:0 100%;animation:hold5 5s linear forwards;border-radius:6px;}
+@keyframes hold5{to{background-size:100% 100%}}
+.ren-undo{display:block;width:100%;margin:4px 0 10px;border:1px solid #E07A1F;background:#FFF4EA;color:#9A4A06;font-weight:800;border-radius:10px;padding:11px;font-size:14px;cursor:pointer;}
 .cat-menu{position:fixed;z-index:9998;min-width:210px;background:#fff;border:1px solid var(--border);border-radius:12px;box-shadow:0 8px 28px rgba(0,0,0,.18);padding:6px;}
 .cat-menu .cm-title{font-size:12px;color:var(--muted);font-weight:700;padding:6px 10px 4px;}
 .cat-menu button{display:block;width:100%;text-align:left;border:none;background:none;padding:11px 10px;font-size:14.5px;font-weight:700;border-radius:8px;cursor:pointer;color:#16202A;}
@@ -806,18 +810,18 @@ header h1{
 <div class="upd-bar" id="updBar"><span id="updText">새 버전이 있습니다. 업데이트하시겠습니까?</span><button type="button" id="updGo">업데이트</button><button type="button" id="updLater">나중에</button></div>
 <header>
   <div class="header-top">
-    <div class="title-wrap"><h1 class="h1-ver"><span class="status-dot" id="statusDot"></span><span class="ver-tag">ver 0.12</span>새로고침 재고관리</h1><div class="sync-line"><span class="sync-time" id="syncTime">동기화 중…</span><button type="button" class="sync-btn" id="btnSync" title="지금 최신 자료로 다시 맞추기">⟳ 동기화</button></div></div>
+    <div class="title-wrap"><h1 class="h1-ver"><span class="status-dot" id="statusDot"></span><span class="ver-tag">ver 0.13</span><span data-lbl="title">새로고침 재고관리</span></h1><div class="sync-line"><span class="sync-time" id="syncTime">동기화 중…</span><button type="button" class="sync-btn" id="btnSync" title="지금 최신 자료로 다시 맞추기">⟳ 동기화</button></div></div>
     <button type="button" class="user-chip empty" id="userChip">이름 정하기</button>
   </div>
   <button type="button" class="inst-btn" id="btnInst">바탕화면에 바로가기 만들기</button>
   <div class="online-row" id="onlineRow">지금 접속 중: 확인 중…</div>
   <div class="summary-row">
     <div class="summary-box">
-      <div class="label">전체 품목</div>
+      <div class="label" data-lbl="sumItems">전체 품목</div>
       <div class="value" id="sumItemCount">0개</div>
     </div>
     <div class="summary-box">
-      <div class="label">재고 총액</div>
+      <div class="label" data-lbl="sumValue">재고 총액</div>
       <div class="value" id="sumTotalValue">0원</div>
     </div>
   </div>
@@ -840,7 +844,7 @@ header h1{
 
 <div class="log-section">
   <div class="log-header">
-    <span>변경 기록</span>
+    <span data-lbl="logTitle">변경 기록</span>
     <button type="button" class="log-user-btn" id="btnTrash">삭제 복구</button>
   </div>
   <div class="log-list" id="logList"></div>
@@ -848,11 +852,11 @@ header h1{
 
 <button type="button" class="last-log" id="lastLog" title="눌러서 변경 기록 보기">📝 최근 변경: 불러오는 중…</button>
 <div class="fab-row">
-  <button class="fab ghost" id="btnAddCategory">+ 분류 추가</button>
-  <button class="fab primary" id="btnAddItemGlobal">+ 상품 추가</button>
+  <button class="fab ghost" id="btnAddCategory" data-lbl="addCat">+ 분류 추가</button>
+  <button class="fab primary" id="btnAddItemGlobal" data-lbl="addItem">+ 상품 추가</button>
 </div>
 <div class="send-row" id="sendRow">
-  <span class="send-lbl">주소 보내기</span>
+  <span class="send-lbl" data-lbl="sendLbl">주소 보내기</span>
   <button type="button" class="sd sd-kakao" id="sdKakao">카톡</button>
   <button type="button" class="sd sd-flow" id="sdFlow">플로우</button>
   <a class="sd sd-sms" id="sdSms">문자</a>
@@ -888,6 +892,14 @@ header h1{
   </div>
 </div>
 <div id="shToast" class="sh-toast"></div>
+<div class="overlay" id="renOverlay">
+  <div class="sheet">
+    <h2 id="renTitle">이름 고치기</h2>
+    <div class="field"><label id="renLabel">새 이름</label><input id="renInput" autocomplete="off" style="font-size:16px"></div>
+    <div id="renUndoBox"></div>
+    <div class="sheet-btns"><button class="btn-cancel" id="renCancel">취소</button><button class="btn-save" id="renSave">고치기</button></div>
+  </div>
+</div>
 <div class="overlay" id="instOverlay">
   <div class="sheet">
     <h2 id="instTitle">바로가기 만들기</h2>
@@ -1192,6 +1204,42 @@ async function undoCat(catId){
 }
 
 
+// 0.13 5초 누르기 → 고치기 (모든 대표님 프로그램 공통 규칙)
+function hold5(el, fire){ if(!el || el._h5) return; el._h5 = true; let tm = null, sx = 0, sy = 0, fired = false;
+  const start = (x, y)=>{ fired = false; sx = x; sy = y; clearTimeout(tm); el.classList.add('hold5'); tm = setTimeout(()=>{ el.classList.remove('hold5'); fired = true; closeCatMenu && closeCatMenu(); try{ navigator.vibrate && navigator.vibrate(40); }catch(e){} fire(); }, 5000); };
+  const stop = ()=>{ clearTimeout(tm); el.classList.remove('hold5'); if(fired) setTimeout(()=>{ fired = false; }, 400); };
+  el.addEventListener('touchstart', e=>{ const t = e.touches[0]; start(t.clientX, t.clientY); }, { passive:true });
+  el.addEventListener('touchmove', e=>{ const t = e.touches[0]; if(Math.hypot(t.clientX - sx, t.clientY - sy) > 12) stop(); }, { passive:true });
+  el.addEventListener('touchend', stop); el.addEventListener('mousedown', e=>{ if(e.button === 0) start(e.clientX, e.clientY); }); el.addEventListener('mouseup', stop); el.addEventListener('mouseleave', stop);
+  el.addEventListener('click', e=>{ if(fired){ fired = false; e.stopImmediatePropagation(); e.preventDefault(); } }, true); }
+let lblMap = {}, lblHist = [];
+function lbl(k, d){ return lblMap[k] || d; }
+const LBL_DEF = {};
+function applyLbls(){ document.querySelectorAll('[data-lbl]').forEach(el=>{ const k = el.dataset.lbl; if(!(k in LBL_DEF)) LBL_DEF[k] = el.textContent; const t = lbl(k, LBL_DEF[k]); if(el.textContent !== t) el.textContent = t;
+  hold5(el, ()=> openRename({ title:'이름 고치기', label:'"' + t + '" → 새 이름', value:t, kind:'lbl', key:k, def:LBL_DEF[k] })); }); }
+let renCtx = null;
+function openRename(ctx){ if(!requireName()) return; renCtx = ctx; document.getElementById('renTitle').textContent = ctx.title; document.getElementById('renLabel').textContent = ctx.label;
+  const inp = document.getElementById('renInput'); inp.value = ctx.value; inp.setAttribute('inputmode', 'text');
+  const ub = document.getElementById('renUndoBox'); const last = ctx.kind === 'lbl' ? lblHist[lblHist.length - 1] : null;
+  ub.innerHTML = (ctx.kind === 'lbl' && lblMap[ctx.key] ? `<button type="button" class="ren-undo" id="renDef">원래 이름으로: ${escapeHtml(ctx.def)}</button>` : '') + (last ? `<button type="button" class="ren-undo" id="renUndo">↶ 되돌리기: "${escapeHtml(last.to)}" → "${escapeHtml(last.from)}"</button>` : '') + (ctx.kind === 'cat' ? '<div style="font-size:12.5px;color:#777;margin:-4px 0 8px">고친 것은 그 분류의 [↶ 되돌리기]로 되돌릴 수 있어요</div>' : '');
+  if(document.getElementById('renDef')) document.getElementById('renDef').onclick = ()=>{ inp.value = ctx.def; doRename(); };
+  if(document.getElementById('renUndo')) document.getElementById('renUndo').onclick = ()=> undoLbl();
+  document.getElementById('renOverlay').classList.add('open'); setTimeout(()=> inp.focus(), 80); }
+document.getElementById('renCancel').addEventListener('click', ()=> document.getElementById('renOverlay').classList.remove('open'));
+document.getElementById('renSave').addEventListener('click', ()=> doRename());
+document.getElementById('renInput').addEventListener('keydown', e=>{ if(e.key === 'Enter') doRename(); });
+async function doRename(){ const c = renCtx; if(!c) return; const nw = document.getElementById('renInput').value.trim();
+  if(!nw){ alert('새 이름을 써 주세요'); return; } document.getElementById('renOverlay').classList.remove('open'); if(nw === c.value) return;
+  if(c.kind === 'cat'){ await snapUndo([c.id], `분류 이름 고침: "${c.value}" → "${nw}"`); await updateDoc(doc(db,'categories', c.id), { name: nw }); addLog(`[분류 이름 고침] "${c.value}" → "${nw}"`); return; }
+  const m = { ...lblMap }; if(nw === c.def) delete m[c.key]; else m[c.key] = nw;
+  const h = lblHist.concat([{ k:c.key, from:c.value, to:nw, by:userName, at:Date.now() }]).slice(-50);
+  await commitInChunks([{ type:'set', ref: doc(db,'settings','labels'), data: { map:m, hist:h } }]); addLog(`[이름 고침] "${c.value}" → "${nw}"`); }
+async function undoLbl(){ const last = lblHist[lblHist.length - 1]; if(!last) return; document.getElementById('renOverlay').classList.remove('open');
+  const m = { ...lblMap }; if(last.from === LBL_DEF[last.k]) delete m[last.k]; else m[last.k] = last.from;
+  await commitInChunks([{ type:'set', ref: doc(db,'settings','labels'), data: { map:m, hist: lblHist.slice(0, -1) } }]); addLog(`[되돌리기] 이름 "${last.to}" → "${last.from}"`); }
+onSnapshot(collection(db, 'settings'), (snap)=>{ const d = snap.docs.find(x=>x.id === 'labels'); const v = d ? d.data() : {}; lblMap = v.map || {}; lblHist = v.hist || []; applyLbls(); try{ render(); }catch(e){} });
+setTimeout(applyLbls, 0);
+
 let categories = [];
 let items = [];
 let logs = [];
@@ -1462,8 +1510,8 @@ function render(){ requestAnimationFrame(()=>{ try{ placeYard(); }catch(e){} });
       <div class="cat-head">
         <div style="display:flex;align-items:center">
           <div>
-            <div class="cat-title">야적장</div>
-            <div class="cat-count">팔레트 배치도</div>
+            <div class="cat-title" data-lbl="yard">${escapeHtml(lbl('yard', '야적장'))}</div>
+            <div class="cat-count" data-lbl="yardSub">${escapeHtml(lbl('yardSub', '팔레트 배치도'))}</div>
           </div>
         </div>
         <div class="cat-head-right">
@@ -1823,7 +1871,7 @@ function moveTargets(exceptId, withYard){
   const cats = categories.slice().sort((a,b)=>(a.order??0)-(b.order??0));
   const out = [], used = new Set([exceptId]);
   MOVE_ORDER.forEach(n=>{
-    if(n === '야적장'){ if(withYard && !(yardCfg && yardCfg.hidden)) out.push({ v:'__yard', t:'야적장' }); return; }
+    if(n === '야적장'){ if(withYard && !(yardCfg && yardCfg.hidden)) out.push({ v:'__yard', t:lbl('yard', '야적장') }); return; }
     const c = cats.find(x=> catNorm(x.name) === catNorm(n));
     if(c){ if(!used.has(c.id)){ used.add(c.id); out.push({ v:c.id, t:c.name }); } }
     else out.push({ v:'__new:' + n, t:n });
@@ -2687,12 +2735,15 @@ function catMenuOutside(e){ const m = document.getElementById('catMenu'); if(m &
 function closeCatMenu(){ const m = document.getElementById('catMenu'); if(m) m.remove(); document.removeEventListener('pointerdown', catMenuOutside, true); }
 let catPressT = null, catPressed = false;
 function bindCatMenu(head, id, name){
+  const ttl = head.querySelector('.cat-title');
+  if(ttl && id !== '__yard') hold5(ttl, ()=> openRename({ title:'분류 이름 고치기', label:'"' + name + '" → 새 이름', value:name, kind:'cat', id }));
+  if(id === '__yard'){ head.querySelectorAll('[data-lbl]').forEach(el=>{ const k = el.dataset.lbl, d = k === 'yard' ? '야적장' : '팔레트 배치도'; LBL_DEF[k] = d; hold5(el, ()=> openRename({ title:'이름 고치기', label:'"' + lbl(k, d) + '" → 새 이름', value:lbl(k, d), kind:'lbl', key:k, def:d })); }); }
   head.addEventListener('contextmenu', (e)=>{ e.preventDefault(); openCatMenu(e.clientX, e.clientY, id, name); });
   // 아이폰·아이패드 사파리는 길게 눌러도 contextmenu가 안 오므로 직접 잰다
   head.addEventListener('touchstart', (e)=>{ catPressed = false; const t = e.touches[0]; clearTimeout(catPressT);
     head._sx = t.clientX; head._sy = t.clientY;
     catPressT = setTimeout(()=>{ catPressed = true; try{ navigator.vibrate && navigator.vibrate(15); }catch(e){} openCatMenu(t.clientX, t.clientY, id, name); }, 500); }, { passive:true });
-  ['touchend','touchcancel'].forEach(ev=> head.addEventListener(ev, ()=> clearTimeout(catPressT), { passive:true }));
+  ['touchend','touchcancel'].forEach(ev=> head.addEventListener(ev, ()=>{ clearTimeout(catPressT); if(catPressed) setTimeout(()=>{ catPressed = false; }, 400); }, { passive:true }));
   head.addEventListener('touchmove', (e)=>{ const t = e.touches[0]; if(t && Math.hypot(t.clientX - head._sx, t.clientY - head._sy) > 12) clearTimeout(catPressT); }, { passive:true });
   head.addEventListener('click', (e)=>{ if(catPressed){ catPressed = false; e.stopImmediatePropagation(); e.preventDefault(); } }, true);
 }
@@ -2708,7 +2759,7 @@ function applyDeepCat(){
 }
 
 // 0.5 새 버전 알림: 켤 때 version.json을 보고, 더 새 판이 있으면 왼쪽 위에 알림. [업데이트] 한 번이면 새 판으로 다시 열림 (재고 기록은 그대로)
-const APP_VER = '0.12';
+const APP_VER = '0.13';
 const VER_URL = 'https://ds4eqm-lgtm.github.io/inventory/version.json';
 function verNum(v){ const p = String(v||'0').split('.'); return [parseInt(p[0])||0, parseInt(p[1])||0]; }
 function verNewer(a, b){ const x = verNum(a), y = verNum(b); return x[0] > y[0] || (x[0] === y[0] && x[1] > y[1]); }
