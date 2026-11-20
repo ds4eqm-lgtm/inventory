@@ -803,7 +803,7 @@ header h1{
 <div class="upd-bar" id="updBar"><span id="updText">새 버전이 있습니다. 업데이트하시겠습니까?</span><button type="button" id="updGo">업데이트</button><button type="button" id="updLater">나중에</button></div>
 <header>
   <div class="header-top">
-    <div class="title-wrap"><h1 class="h1-ver"><span class="status-dot" id="statusDot"></span><span class="ver-tag">ver 0.9</span>새로고침 재고관리</h1><div class="sync-line"><span class="sync-time" id="syncTime">동기화 중…</span><button type="button" class="sync-btn" id="btnSync" title="지금 최신 자료로 다시 맞추기">⟳ 동기화</button></div></div>
+    <div class="title-wrap"><h1 class="h1-ver"><span class="status-dot" id="statusDot"></span><span class="ver-tag">ver 0.10</span>새로고침 재고관리</h1><div class="sync-line"><span class="sync-time" id="syncTime">동기화 중…</span><button type="button" class="sync-btn" id="btnSync" title="지금 최신 자료로 다시 맞추기">⟳ 동기화</button></div></div>
     <button type="button" class="user-chip empty" id="userChip">이름 정하기</button>
   </div>
   <button type="button" class="inst-btn" id="btnInst">바탕화면에 바로가기 만들기</button>
@@ -1107,8 +1107,9 @@ const logsCol = collection(db, 'logs');
 const trashCol = collection(db, 'trash');
 // 0.4 되돌리기: 상품을 고치거나 넣거나 옮기거나 지우기 바로 전에, 그 분류 모습을 통째로 undo에 남겨 둔다
 
-// 0.4 야적장 LVT 칸 위치·숨김 (settings/yard), 바꾸기 전 모습은 undo에 남김
+// 0.4 야적장 칸 위치·숨김 (settings/yard), 바꾸기 전 모습은 undo에 남김
 let yardCfg = null, yardCur = { afterCat:'__top', hidden:false };
+let yardPosDone = false;
 const PAL_URL = 'https://ds4eqm-lgtm.github.io/commerce-insight/pallet/';
 let palKey = null, palKeyReady = false, yardFr = null, yardWait = null;
 function palLocalTok(){ try{ const c = JSON.parse(localStorage.getItem('pl1_cfg') || 'null'); return c && c.tok ? String(c.tok) : null; }catch(e){ return null; } }
@@ -1135,24 +1136,26 @@ function placeYard(){
 window.addEventListener('resize', ()=> requestAnimationFrame(placeYard));
 try{ new ResizeObserver(()=> requestAnimationFrame(placeYard)).observe(document.body); }catch(e){}
 onSnapshot(collection(db, 'settings'), (snap)=>{ const d = snap.docs.find(x=>x.id === 'yard'); yardCfg = d ? d.data() : null;
-  const pk = snap.docs.find(x=>x.id === 'pallet'); palKeyReady = true; palShare(); try{ render(); }catch(e){} });
+  const pk = snap.docs.find(x=>x.id === 'pallet'); palKeyReady = true; palShare();
+  if(yardCfg && !yardCfg.pos10 && !yardPosDone && categories.length){ const m = categories.find(c=> catNorm(c.name) === '매장'); if(m){ yardPosDone = true;
+    commitInChunks([{ type:'set', ref: doc(db,'settings','yard'), data: { ...yardCfg, afterCat: m.id, pos10: true } }]).catch(()=>{}); } } try{ render(); }catch(e){} });
 async function setYard(patch, label){
   await snapUndo(['__yard'], label, { yard: { ...yardCur } });
-  try{ await commitInChunks([{ type:'set', ref: doc(db,'settings','yard'), data: { ...yardCur, ...patch } }]); addLog(`[야적장 LVT] ${label}`); }
+  try{ await commitInChunks([{ type:'set', ref: doc(db,'settings','yard'), data: { ...yardCur, ...patch } }]); addLog(`[야적장] ${label}`); }
   catch(err){ console.error(err); alert('저장 중 문제가 생겼어요. 잠시 후 다시 해주세요'); }
 }
 function openYardMove(sorted){
   const ov = document.createElement('div'); ov.className = 'overlay open';
-  ov.innerHTML = `<div class="sheet"><h2>야적장 LVT 옮기기</h2><div class="name-hint">어느 분류 다음에 둘까요</div><div class="yard-pos">`
+  ov.innerHTML = `<div class="sheet"><h2>야적장 옮기기</h2><div class="name-hint">어느 분류 다음에 둘까요</div><div class="yard-pos">`
     + [`<button type="button" data-a="__top">맨 위</button>`].concat(sorted.map(c=>`<button type="button" data-a="${c.id}">${escapeHtml(c.name)} 다음</button>`)).join('')
     + `</div><div class="sheet-btns"><button class="btn-cancel">닫기</button></div></div>`;
   document.body.appendChild(ov);
   ov.querySelector('.btn-cancel').onclick = ()=> ov.remove();
-  ov.querySelectorAll('[data-a]').forEach(b=> b.onclick = ()=>{ ov.remove(); if(b.dataset.a === yardCur.afterCat) return; setYard({ afterCat: b.dataset.a }, '야적장 LVT 위치 옮김: ' + b.textContent); });
+  ov.querySelectorAll('[data-a]').forEach(b=> b.onclick = ()=>{ ov.remove(); if(b.dataset.a === yardCur.afterCat) return; setYard({ afterCat: b.dataset.a }, '야적장 위치 옮김: ' + b.textContent); });
 }
 async function hideYard(){
-  if(!confirm('야적장 LVT 칸을 목록에서 뺄까요\n배치도 기록은 그대로 남고, 삭제 복구로 다시 넣을 수 있어요')) return;
-  const label = '분류 "야적장 LVT" 빼기';
+  if(!confirm('야적장 칸을 목록에서 뺄까요\n배치도 기록은 그대로 남고, 삭제 복구로 다시 넣을 수 있어요')) return;
+  const label = '분류 "야적장" 빼기';
   const trashId = await saveToTrash({ type:'yard', label, yard: { ...yardCur } });
   await setYard({ hidden:true }, label);
   if(trashId) showUndoToast(trashId, label);
@@ -1171,7 +1174,7 @@ async function snapUndo(catIds, label, extra){
 async function undoCat(catId){
   const cname = (categories.find(c=>c.id===catId) || {}).name || '';
   const u = undoList.find(x=>!x.used && (x.catIds||[]).includes(catId));
-  if(!u){ alert((catId === '__yard' ? '야적장 LVT' : cname) + ' 분류에는 되돌릴 작업이 없어요'); return; }
+  if(!u){ alert((catId === '__yard' ? '야적장' : cname) + ' 분류에는 되돌릴 작업이 없어요'); return; }
   if(!confirm(`바로 전 작업을 되돌릴까요\n\n${u.label}\n(${u.author || ''} · ${formatTime(u.createdAt)})\n\n되돌린 것도 기록에 남아요`)) return;
   const keep = new Set((u.items||[]).map(x=>x.id));
   const ops = [];
@@ -1429,8 +1432,8 @@ function render(){
     return oa - ob;
   });
 
-  // 시험판: 야적장 LVT 적재 칸을 10번창고 바로 다음(매장 앞)에 끼워 넣음
-  const yardDefault = sortedCategories.find(c => /10번\s*창고/.test(c.name));
+  // 시험판: 야적장 적재 칸을 10번창고 바로 다음(매장 앞)에 끼워 넣음
+  const yardDefault = sortedCategories.find(c => catNorm(c.name) === '매장') || sortedCategories.find(c => /10번\s*창고/.test(c.name));
   const yAfterId = (yardCfg && yardCfg.afterCat !== undefined) ? yardCfg.afterCat : (yardDefault ? yardDefault.id : '__top');
   let yardAfter = yAfterId === '__top' ? null : sortedCategories.find(c=>c.id === yAfterId);
   if(yAfterId !== '__top' && !yardAfter) yardAfter = sortedCategories[sortedCategories.length-1] || null;
@@ -1450,7 +1453,7 @@ function render(){
       <div class="cat-head">
         <div style="display:flex;align-items:center">
           <div>
-            <div class="cat-title">야적장 LVT</div>
+            <div class="cat-title">야적장</div>
             <div class="cat-count">팔레트 배치도</div>
           </div>
         </div>
@@ -1469,11 +1472,11 @@ function render(){
         <div class="yard-note">야적장 팔레트 배치도입니다. 여기서 넣거나 고친 것은 실제 야적장 기록에 남습니다. <a href="https://ds4eqm-lgtm.github.io/commerce-insight/pallet/" target="_blank" rel="noopener">새 창으로 크게 열기</a></div>
         <div class="yard-slot"></div>
       </div>` : ''}`;
-    bindCatMenu(card.querySelector('.cat-head'), '__yard', '야적장 LVT');
+    bindCatMenu(card.querySelector('.cat-head'), '__yard', '야적장');
     card.querySelector('.cat-head').addEventListener('click', (e)=>{ if(e.target.closest('[data-action]')) return; openState.__yard = !open; render(); });
     const yAct = (a, fn)=> card.querySelector('[data-action="'+a+'"]').addEventListener('click', (e)=>{ e.stopPropagation(); if(!requireName()) return; fn(); });
-    yAct('yup', ()=> setYard({ afterCat: yardIdx-1 <= 0 ? '__top' : sortedCategories[yardIdx-2].id }, '야적장 LVT 위로 올림'));
-    yAct('ydown', ()=> setYard({ afterCat: sortedCategories[yardIdx].id }, '야적장 LVT 아래로 내림'));
+    yAct('yup', ()=> setYard({ afterCat: yardIdx-1 <= 0 ? '__top' : sortedCategories[yardIdx-2].id }, '야적장 위로 올림'));
+    yAct('ydown', ()=> setYard({ afterCat: sortedCategories[yardIdx].id }, '야적장 아래로 내림'));
     yAct('ymove', ()=> openYardMove(sortedCategories));
     yAct('yundo', ()=> undoCat('__yard'));
     yAct('ydel', hideYard);
@@ -1803,7 +1806,7 @@ document.getElementById('itemQuickMoveBtn').addEventListener('click', async ()=>
   itemOverlay.classList.remove('open');
 });
 
-// 0.9 상품 → 야적장 LVT: 재고 목록에서 빼고(휴지통·되돌리기에 남김) 배치도를 펼쳐 넣을 빈 칸을 고르게 함
+// 0.9 상품 → 야적장: 재고 목록에서 빼고(휴지통·되돌리기에 남김) 배치도를 펼쳐 넣을 빈 칸을 고르게 함
 const MOVE_DEFAULTS = ['2층창고','3층창고','10번창고','40번창고','매장','서두','가격표'];
 const catNorm = t=> String(t||'').replace(/\s+/g, '');
 function moveTargets(exceptId, withYard){
@@ -1811,7 +1814,7 @@ function moveTargets(exceptId, withYard){
   const out = cats.filter(c=>c.id !== exceptId).map(c=>({ v:c.id, t:c.name }));
   const cur = categories.find(c=>c.id === exceptId);
   MOVE_DEFAULTS.forEach(n=>{ if(!cats.some(c=>catNorm(c.name) === catNorm(n)) && !(cur && catNorm(cur.name) === catNorm(n))) out.push({ v:'__new:' + n, t:n }); });
-  if(withYard && !(yardCfg && yardCfg.hidden)) out.push({ v:'__yard', t:'야적장 LVT' });
+  if(withYard && !(yardCfg && yardCfg.hidden)){ const mi = out.findIndex(o=> catNorm(o.t) === '매장'); out.splice(mi >= 0 ? mi + 1 : out.length, 0, { v:'__yard', t:'야적장' }); }
   return out;
 }
 async function ensureCat(name){
@@ -1826,11 +1829,11 @@ function palletOf(name){ const m = String(name||'').trim().match(/^(\S+)\s+(\d{8
 async function moveToYard(item){
   if(!requireName()) return;
   const catName = (categories.find(c=>c.id===item.categoryId) || {}).name || '';
-  const label = `상품 이동: "${item.name}" → "야적장 LVT"`;
+  const label = `상품 이동: "${item.name}" → "야적장"`;
   const trashId = await saveToTrash({ type:'item', label, items:[packDoc(item)] });
   await snapUndo([item.categoryId], label);
   await deleteDoc(doc(db,'items', item.id));
-  addLog(`[상품 이동] "${item.name}" : "${catName}" → "야적장 LVT" (${formatQty(item.qty)}${item.unit||''})`);
+  addLog(`[상품 이동] "${item.name}" : "${catName}" → "야적장" (${formatQty(item.qty)}${item.unit||''})`);
   itemOverlay.classList.remove('open');
   openState.__yard = true; render();
   setTimeout(()=>{ const el = document.querySelector('.yard-card'); if(el) el.scrollIntoView({ block:'start', behavior:'smooth' }); }, 150);
@@ -2660,7 +2663,7 @@ function applyDeepCat(){
 }
 
 // 0.5 새 버전 알림: 켤 때 version.json을 보고, 더 새 판이 있으면 왼쪽 위에 알림. [업데이트] 한 번이면 새 판으로 다시 열림 (재고 기록은 그대로)
-const APP_VER = '0.9';
+const APP_VER = '0.10';
 const VER_URL = 'https://ds4eqm-lgtm.github.io/inventory/version.json';
 function verNum(v){ const p = String(v||'0').split('.'); return [parseInt(p[0])||0, parseInt(p[1])||0]; }
 function verNewer(a, b){ const x = verNum(a), y = verNum(b); return x[0] > y[0] || (x[0] === y[0] && x[1] > y[1]); }
