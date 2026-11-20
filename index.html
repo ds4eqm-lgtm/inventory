@@ -803,7 +803,7 @@ header h1{
 <div class="upd-bar" id="updBar"><span id="updText">새 버전이 있습니다. 업데이트하시겠습니까?</span><button type="button" id="updGo">업데이트</button><button type="button" id="updLater">나중에</button></div>
 <header>
   <div class="header-top">
-    <div class="title-wrap"><h1 class="h1-ver"><span class="status-dot" id="statusDot"></span><span class="ver-tag">ver 0.8</span>새로고침 재고관리</h1><div class="sync-line"><span class="sync-time" id="syncTime">동기화 중…</span><button type="button" class="sync-btn" id="btnSync" title="지금 최신 자료로 다시 맞추기">⟳ 동기화</button></div></div>
+    <div class="title-wrap"><h1 class="h1-ver"><span class="status-dot" id="statusDot"></span><span class="ver-tag">ver 0.9</span>새로고침 재고관리</h1><div class="sync-line"><span class="sync-time" id="syncTime">동기화 중…</span><button type="button" class="sync-btn" id="btnSync" title="지금 최신 자료로 다시 맞추기">⟳ 동기화</button></div></div>
     <button type="button" class="user-chip empty" id="userChip">이름 정하기</button>
   </div>
   <button type="button" class="inst-btn" id="btnInst">바탕화면에 바로가기 만들기</button>
@@ -1690,15 +1690,10 @@ function openItemSheet(catId, itemId){
 
     const moveRow = document.getElementById('itemMoveRow');
     const otherCats = categories.filter(c=>c.id !== catId);
-    if(otherCats.length > 0){
+    if(true){
       const moveSel = document.getElementById('itemQuickMoveSelect');
       moveSel.innerHTML = '';
-      otherCats.forEach(c=>{
-        const opt = document.createElement('option');
-        opt.value = c.id;
-        opt.textContent = c.name;
-        moveSel.appendChild(opt);
-      });
+      moveTargets(catId, true).forEach(t=>{ const opt = document.createElement('option'); opt.value = t.v; opt.textContent = t.t; moveSel.appendChild(opt); });
       moveRow.classList.remove('hidden');
     } else {
       moveRow.classList.add('hidden');
@@ -1795,6 +1790,8 @@ document.getElementById('itemQuickMoveBtn').addEventListener('click', async ()=>
   const targetId = document.getElementById('itemQuickMoveSelect').value;
   const item = items.find(i=>i.id === editingItemId);
   if(!item || !targetId) return;
+  if(targetId === '__yard'){ await moveToYard(item); return; }
+  if(targetId.startsWith('__new:')){ if(!requireName()) return; const nid = await ensureCat(targetId.slice(6)); document.getElementById('itemQuickMoveSelect').innerHTML = `<option value="${nid}"></option>`; document.getElementById('itemQuickMoveBtn').click(); return; }
 
   const targetCat = categories.find(c=>c.id === targetId);
   const oldCat = categories.find(c=>c.id === item.categoryId);
@@ -1806,6 +1803,42 @@ document.getElementById('itemQuickMoveBtn').addEventListener('click', async ()=>
   itemOverlay.classList.remove('open');
 });
 
+// 0.9 상품 → 야적장 LVT: 재고 목록에서 빼고(휴지통·되돌리기에 남김) 배치도를 펼쳐 넣을 빈 칸을 고르게 함
+const MOVE_DEFAULTS = ['2층창고','3층창고','10번창고','40번창고','매장','서두','가격표'];
+const catNorm = t=> String(t||'').replace(/\s+/g, '');
+function moveTargets(exceptId, withYard){
+  const cats = categories.slice().sort((a,b)=>(a.order??0)-(b.order??0));
+  const out = cats.filter(c=>c.id !== exceptId).map(c=>({ v:c.id, t:c.name }));
+  const cur = categories.find(c=>c.id === exceptId);
+  MOVE_DEFAULTS.forEach(n=>{ if(!cats.some(c=>catNorm(c.name) === catNorm(n)) && !(cur && catNorm(cur.name) === catNorm(n))) out.push({ v:'__new:' + n, t:n }); });
+  if(withYard && !(yardCfg && yardCfg.hidden)) out.push({ v:'__yard', t:'야적장 LVT' });
+  return out;
+}
+async function ensureCat(name){
+  const ex = categories.find(c=>catNorm(c.name) === catNorm(name)); if(ex) return ex.id;
+  const ref = await addDoc(categoriesCol, { name, order: categories.length, createdAt: serverTimestamp() });
+  addLog(`[분류 추가] "${name}" (상품을 옮기며 만듦)`);
+  if(!categories.some(c=>c.id === ref.id)) categories.push({ id: ref.id, name, order: categories.length });
+  return ref.id;
+}
+function yardWin(){ const f = (typeof yardFr !== 'undefined' && yardFr) || document.querySelector('.yard-frame'); try{ return f && f.contentWindow; }catch(e){ return null; } }
+function palletOf(name){ const m = String(name||'').trim().match(/^(\S+)\s+(\d{8}|\d{6})(?!\d)/); if(!m) return { no: String(name||'').trim(), d: '' }; return { no: m[1], d: m[2].length === 6 ? '20' + m[2] : m[2] }; }
+async function moveToYard(item){
+  if(!requireName()) return;
+  const catName = (categories.find(c=>c.id===item.categoryId) || {}).name || '';
+  const label = `상품 이동: "${item.name}" → "야적장 LVT"`;
+  const trashId = await saveToTrash({ type:'item', label, items:[packDoc(item)] });
+  await snapUndo([item.categoryId], label);
+  await deleteDoc(doc(db,'items', item.id));
+  addLog(`[상품 이동] "${item.name}" : "${catName}" → "야적장 LVT" (${formatQty(item.qty)}${item.unit||''})`);
+  itemOverlay.classList.remove('open');
+  openState.__yard = true; render();
+  setTimeout(()=>{ const el = document.querySelector('.yard-card'); if(el) el.scrollIntoView({ block:'start', behavior:'smooth' }); }, 150);
+  const p = palletOf(item.name); let n = 0;
+  const tryPlace = ()=>{ const w = yardWin(); if(w && typeof w.plPlace === 'function'){ w.plPlace(p); shToast('야적장 배치도에서 넣을 빈 칸을 누르세요', 6000); return; }
+    if(++n < 40) setTimeout(tryPlace, 400); else shToast('재고 목록에서 뺐습니다. 야적장 배치도에서 빈 칸을 눌러 ' + p.no + ' 을(를) 넣어 주세요', 8000); };
+  setTimeout(tryPlace, 300);
+}
 document.getElementById('itemDeleteBtn').addEventListener('click', async ()=>{
   if(!requireName()) return;
   if(!confirm('이 상품을 삭제할까요')) return;
@@ -2098,22 +2131,14 @@ function openMoveCatSheet(catId, itemCount){
     alert('이 분류에는 옮길 상품이 없어요');
     return;
   }
-  if(categories.length < 2){
-    alert('이동할 다른 분류가 없어요. 먼저 새 분류를 만들어주세요');
-    return;
-  }
+
   moveCatSourceId = catId;
   const sourceCat = categories.find(c=>c.id === catId);
   document.getElementById('moveCatTitle').textContent = `"${sourceCat.name}" 상품 전체 이동 (${itemCount}개)`;
 
   const sel = document.getElementById('moveCatTargetSelect');
   sel.innerHTML = '';
-  categories.filter(c=>c.id !== catId).forEach(c=>{
-    const opt = document.createElement('option');
-    opt.value = c.id;
-    opt.textContent = c.name;
-    sel.appendChild(opt);
-  });
+  moveTargets(catId, false).forEach(t=>{ const opt = document.createElement('option'); opt.value = t.v; opt.textContent = t.t; sel.appendChild(opt); });
 
   moveCatOverlay.classList.add('open');
 }
@@ -2122,7 +2147,8 @@ document.getElementById('moveCatCancelBtn').addEventListener('click', ()=> moveC
 moveCatOverlay.addEventListener('click', (e)=>{ if(e.target === moveCatOverlay) moveCatOverlay.classList.remove('open'); });
 
 document.getElementById('moveCatConfirmBtn').addEventListener('click', async ()=>{
-  const targetId = document.getElementById('moveCatTargetSelect').value;
+  let targetId = document.getElementById('moveCatTargetSelect').value;
+  if(targetId.startsWith('__new:')){ if(!requireName()) return; targetId = await ensureCat(targetId.slice(6)); }
   const sourceCat = categories.find(c=>c.id === moveCatSourceId);
   const targetCat = categories.find(c=>c.id === targetId);
   const movingItems = items.filter(i=>i.categoryId === moveCatSourceId);
@@ -2634,7 +2660,7 @@ function applyDeepCat(){
 }
 
 // 0.5 새 버전 알림: 켤 때 version.json을 보고, 더 새 판이 있으면 왼쪽 위에 알림. [업데이트] 한 번이면 새 판으로 다시 열림 (재고 기록은 그대로)
-const APP_VER = '0.8';
+const APP_VER = '0.9';
 const VER_URL = 'https://ds4eqm-lgtm.github.io/inventory/version.json';
 function verNum(v){ const p = String(v||'0').split('.'); return [parseInt(p[0])||0, parseInt(p[1])||0]; }
 function verNewer(a, b){ const x = verNum(a), y = verNum(b); return x[0] > y[0] || (x[0] === y[0] && x[1] > y[1]); }
