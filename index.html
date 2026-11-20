@@ -797,6 +797,13 @@ header h1{
   cursor:pointer;
 }
 </style>
+<style>.yard-slot,.yard-frame{height:calc(100vh - 250px)!important;height:calc(100dvh - 250px)!important;min-height:420px}</style>
+<script>/* 0.14 ?app=분류&n=이름 으로 열면 처음부터 그 분류 전용 설치 정보 */
+(function(){try{var q=new URLSearchParams(location.search),k=q.get('app'),n=q.get('n'),l=document.querySelector('link[rel="manifest"]');if(!k||k==='main'||!n||!l)return;
+var U='https://ds4eqm-lgtm.github.io/inventory/',h=(location.hash.match(/cat=([^&]+)/)||[])[1]||'',Q='?app='+encodeURIComponent(k);
+var m={id:U+Q,name:'새로고침 재고 - '+n,short_name:n,start_url:U+Q+'#cat='+h,scope:U,display:'standalone',background_color:'#ffffff',theme_color:'#1B6E4A',
+icons:[{src:U+'icon-192.png',sizes:'192x192',type:'image/png',purpose:'any'},{src:U+'icon-512.png',sizes:'512x512',type:'image/png',purpose:'any'}]};
+l.setAttribute('href',URL.createObjectURL(new Blob([JSON.stringify(m)],{type:'application/manifest+json'})));window.__appMf=k;}catch(e){}})();</script>
 </head>
 <body>
 
@@ -810,7 +817,7 @@ header h1{
 <div class="upd-bar" id="updBar"><span id="updText">새 버전이 있습니다. 업데이트하시겠습니까?</span><button type="button" id="updGo">업데이트</button><button type="button" id="updLater">나중에</button></div>
 <header>
   <div class="header-top">
-    <div class="title-wrap"><h1 class="h1-ver"><span class="status-dot" id="statusDot"></span><span class="ver-tag">ver 0.13</span><span data-lbl="title">새로고침 재고관리</span></h1><div class="sync-line"><span class="sync-time" id="syncTime">동기화 중…</span><button type="button" class="sync-btn" id="btnSync" title="지금 최신 자료로 다시 맞추기">⟳ 동기화</button></div></div>
+    <div class="title-wrap"><h1 class="h1-ver"><span class="status-dot" id="statusDot"></span><span class="ver-tag">ver 0.14</span><span data-lbl="title">새로고침 재고관리</span></h1><div class="sync-line"><span class="sync-time" id="syncTime">동기화 중…</span><button type="button" class="sync-btn" id="btnSync" title="지금 최신 자료로 다시 맞추기">⟳ 동기화</button></div></div>
     <button type="button" class="user-chip empty" id="userChip">이름 정하기</button>
   </div>
   <button type="button" class="inst-btn" id="btnInst">바탕화면에 바로가기 만들기</button>
@@ -2586,7 +2593,10 @@ const APP_NAME = '새로고침 재고관리';
 const SC_MAIN = { url: SHARE_URL, name: APP_NAME, label: '새로고침 재고', key: 'main', file: 'serogochim' };
 let SC = SC_MAIN;
 let instEv = null;
-let mfKey = 'main', instEvKey = 'main', mfOrig = null;
+let mfKey = window.__appMf || 'main', instEvKey = mfKey, mfOrig = window.__appMf ? 'manifest.webmanifest' : null;
+const APPQ = new URLSearchParams(location.search).get('app'), INSTQ = new URLSearchParams(location.search).get('inst');
+let APP_SC = null;
+const scChromeDesk = ('onbeforeinstallprompt' in window) && !/Android|iPhone|iPad|iPod/i.test(navigator.userAgent) && !(/Macintosh/.test(navigator.userAgent) && navigator.maxTouchPoints > 1);
 window.addEventListener('beforeinstallprompt', e=>{ e.preventDefault(); instEv = e; instEvKey = mfKey; });
 function mfUse(t){ const l = document.querySelector('link[rel="manifest"]'); if(!l || !t) return; if(mfOrig === null) mfOrig = l.getAttribute('href');
   const k = t.key || 'main'; if(k === mfKey) return; mfKey = k; instEv = null;
@@ -2595,7 +2605,32 @@ function mfUse(t){ const l = document.querySelector('link[rel="manifest"]'); if(
   const m = { id: U + q, name: t.name, short_name: t.label, start_url: t.url.replace(U, U + q), scope: U, display: 'standalone', background_color: '#ffffff', theme_color: '#1B6E4A',
     icons: [{ src: U + 'icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' }, { src: U + 'icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' }] };
   try{ l.setAttribute('href', URL.createObjectURL(new Blob([JSON.stringify(m)], { type: 'application/manifest+json' }))); }catch(e){} }
-function mfBack(){ setTimeout(()=> mfUse(SC_MAIN), 1500); }
+function mfBack(){ setTimeout(()=> mfUse(APP_SC || SC_MAIN), 1500); }
+// 새 탭에서 설치: 그 탭은 처음부터 그 분류 설치 정보라 크롬·엣지가 [설치]를 바로 내어 줌
+function instTab(w){ const key = SC.key || 'main';
+  const q = key === 'main' ? '?inst=' + (w && w.auto ? 'a' : '1') : '?app=' + encodeURIComponent(key) + '&n=' + encodeURIComponent(SC.label) + '&inst=' + (w && w.auto ? 'a' : '1');
+  const u = SC.url.replace(SHARE_URL, SHARE_URL + q); let win = null; try{ win = window.open(u, '_blank'); }catch(e){}
+  if(!win) location.href = u; else shToast('새 탭에서 [설치]를 눌러 주세요', 6000); }
+function instHelp(){ const edge = /Edg\//.test(navigator.userAgent), whale = /Whale\//.test(navigator.userAgent), nm = APP_SC ? APP_SC.label : APP_NAME;
+  const how = edge ? '오른쪽 위 <b>⋯</b> → <b>[앱]</b> → <b>[이 사이트를 앱으로 설치]</b> → <b>[설치]</b>'
+    : whale ? '오른쪽 위 <b>⋯</b> → <b>[도구 더보기]</b> → <b>[바로가기 만들기]</b> → <b>[창으로 열기]</b> 체크 → <b>[만들기]</b>'
+    : '주소창 오른쪽 <b>설치 아이콘(⊕)</b>을 누르거나, 오른쪽 위 <b>⋮</b> → <b>[전송, 저장, 공유]</b> → <b>[바로가기 만들기]</b> → <b>[창으로 열기]</b> 체크 → <b>[만들기]</b>';
+  instSheet(nm + ' 바로가기', '이 기기에 이미 같은 아이콘이 있거나 브라우저가 설치 창을 내주지 않았습니다.<br><br>' + how + '<br><br>또는 아래 <b>[파일로 만들기]</b>를 누르고 받은 파일을 더블클릭하세요.', scWin ? ()=> winIcon({ desk:true, start:true, auto: INSTQ === 'a' }) : scMac ? ()=> macShortcut() : null);
+  document.getElementById('instGo').textContent = '파일로 만들기'; }
+function appScBoot(n){ n = n || 0; if(!APPQ && !INSTQ) return;
+  if(!APPQ || APPQ === 'main') APP_SC = SC_MAIN;
+  else { const m = location.hash.match(/cat=([^&]+)/); const cid = m ? decodeURIComponent(m[1]) : null; const c = categories.find(x=>x.id === cid);
+    if(!c){ if(n < 60) setTimeout(()=> appScBoot(n + 1), 300); return; } APP_SC = catShortcutTarget(c.id, c.name); }
+  SC = APP_SC; mfUse(APP_SC); if(!INSTQ) return;
+  try{ history.replaceState(null, '', location.pathname + (APPQ ? '?app=' + encodeURIComponent(APPQ) : '') + location.hash); }catch(e){}
+  if(scStandalone) return;
+  let t = 0; const iv = setInterval(()=>{ t++;
+    if(instEv && instEvKey === (APP_SC.key || 'main')){ clearInterval(iv);
+      instSheet(APP_SC.label + ' 바로가기 설치', (scWin ? '바탕화면과 시작 메뉴에' : '바탕화면에') + ' <b>' + escapeHtml(APP_SC.label) + '</b> 아이콘을 만듭니다. <b>[설치]</b>를 누르세요.', ()=>{ const e = instEv; instEv = null;
+        try{ e.prompt(); e.userChoice.then(r=>{ if(r && r.outcome === 'accepted' && INSTQ === 'a' && scWin) setTimeout(()=> winIcon({ desk:false, start:false, auto:true }), 800); }); }catch(x){ instHelp(); } });
+      document.getElementById('instGo').textContent = '설치'; }
+    else if(t >= 15){ clearInterval(iv); instHelp(); } }, 400); }
+setTimeout(appScBoot, 0);
 window.addEventListener('appinstalled', ()=>{ instEv = null; shToast('바탕화면에 바로가기를 만들었습니다', 5000); });
 const scUA = navigator.userAgent;
 const scWin = /Windows NT/.test(scUA) && !/Android|iPhone|iPad/.test(scUA);
@@ -2665,6 +2700,7 @@ function scInstallWin(w){
   if(instEv && instEvKey === (SC.key || 'main') && (w.desk || w.start)){ const e = instEv; instEv = null;
     try{ e.prompt(); e.userChoice.then(r=>{ mfBack(); if(r && r.outcome === 'accepted' && w.auto) setTimeout(()=> winIcon({ desk:false, start:false, auto:true }), 800); }).catch(()=> mfBack()); }catch(x){ mfBack(); } return; }
   mfBack();
+  if(scChromeDesk && !INSTQ && SC !== SC_MAIN && (w.desk || w.start)){ instTab(w); return; }
   winIcon(w);
 }
 
@@ -2701,6 +2737,7 @@ document.getElementById('instClose').addEventListener('click', ()=>{ document.ge
 function doShortcut(){
   if(instEv && instEvKey === (SC.key || 'main')){ const e = instEv; instEv = null; try{ e.prompt(); e.userChoice.then(r=>{ mfBack(); if(r && r.outcome === 'accepted' && scWin && !scPlainChrome && SC === SC_MAIN) setTimeout(winIcon, 800); }).catch(()=> mfBack()); }catch(x){ mfBack(); } return; }
   mfBack();
+  if(scChromeDesk && !INSTQ && !scWin && SC !== SC_MAIN){ instTab({ desk:true }); return; }
   if(shIOS){ if(scKakao){ location.href = 'kakaotalk://web/openExternal?url=' + encodeURIComponent(SC.url); return; }
     if(scInApp){ instSheet('사파리로 열어 주세요', '이 화면은 앱 안 브라우저라 아이콘을 만들 수 없습니다. 오른쪽 위(또는 아래) 메뉴에서 <b>사파리로 열기</b>를 누른 뒤 다시 눌러 주세요.'); return; }
     iosShortcut(); return; }
@@ -2759,7 +2796,7 @@ function applyDeepCat(){
 }
 
 // 0.5 새 버전 알림: 켤 때 version.json을 보고, 더 새 판이 있으면 왼쪽 위에 알림. [업데이트] 한 번이면 새 판으로 다시 열림 (재고 기록은 그대로)
-const APP_VER = '0.13';
+const APP_VER = '0.14';
 const VER_URL = 'https://ds4eqm-lgtm.github.io/inventory/version.json';
 function verNum(v){ const p = String(v||'0').split('.'); return [parseInt(p[0])||0, parseInt(p[1])||0]; }
 function verNewer(a, b){ const x = verNum(a), y = verNum(b); return x[0] > y[0] || (x[0] === y[0] && x[1] > y[1]); }
