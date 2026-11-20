@@ -69,6 +69,8 @@ header h1{
 }
 .header-top h1{margin-top:0;}
 .title-wrap{min-width:0;}
+.h1-ver{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.h1-ver .ver-tag{font-size:13px;}
 .sync-time{font-size:12px;margin-top:3px;color:#9FE3B4;font-weight:600;}
 .sync-line{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
 .sync-btn{margin-top:3px;border:1px solid rgba(159,227,180,.6);background:rgba(159,227,180,.12);color:#C9F5DA;font-size:12px;font-weight:800;border-radius:999px;padding:3px 10px;cursor:pointer;}
@@ -800,9 +802,8 @@ header h1{
 
 <div class="upd-bar" id="updBar"><span id="updText">새 버전이 있습니다. 업데이트하시겠습니까?</span><button type="button" id="updGo">업데이트</button><button type="button" id="updLater">나중에</button></div>
 <header>
-  <div class="brand"><span class="status-dot" id="statusDot"></span> <span class="ver-tag">ver 0.7</span> SEROGOCHIM · 실시간 동기화</div>
   <div class="header-top">
-    <div class="title-wrap"><h1>새로고침 재고관리</h1><div class="sync-line"><span class="sync-time" id="syncTime">동기화 중…</span><button type="button" class="sync-btn" id="btnSync" title="지금 최신 자료로 다시 맞추기">⟳ 동기화</button></div></div>
+    <div class="title-wrap"><h1 class="h1-ver"><span class="status-dot" id="statusDot"></span><span class="ver-tag">ver 0.8</span>새로고침 재고관리</h1><div class="sync-line"><span class="sync-time" id="syncTime">동기화 중…</span><button type="button" class="sync-btn" id="btnSync" title="지금 최신 자료로 다시 맞추기">⟳ 동기화</button></div></div>
     <button type="button" class="user-chip empty" id="userChip">이름 정하기</button>
   </div>
   <button type="button" class="inst-btn" id="btnInst">바탕화면에 바로가기 만들기</button>
@@ -2633,7 +2634,7 @@ function applyDeepCat(){
 }
 
 // 0.5 새 버전 알림: 켤 때 version.json을 보고, 더 새 판이 있으면 왼쪽 위에 알림. [업데이트] 한 번이면 새 판으로 다시 열림 (재고 기록은 그대로)
-const APP_VER = '0.7';
+const APP_VER = '0.8';
 const VER_URL = 'https://ds4eqm-lgtm.github.io/inventory/version.json';
 function verNum(v){ const p = String(v||'0').split('.'); return [parseInt(p[0])||0, parseInt(p[1])||0]; }
 function verNewer(a, b){ const x = verNum(a), y = verNum(b); return x[0] > y[0] || (x[0] === y[0] && x[1] > y[1]); }
