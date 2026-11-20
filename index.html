@@ -30,7 +30,7 @@ body{
   font-family:'Pretendard',-apple-system,BlinkMacSystemFont,'Malgun Gothic',sans-serif;
   background:var(--bg);
   color:var(--text);
-  padding-bottom:128px;
+  padding-bottom:168px;
   -webkit-tap-highlight-color:transparent;
 }
 header{
@@ -521,7 +521,10 @@ header h1{
 .setup-screen h2{font-size:18px;margin-bottom:10px;}
 .setup-screen p{font-size:14px;color:var(--muted);line-height:1.6;}
 
-.log-section{
+.last-log{position:fixed;left:12px;right:12px;bottom:116px;max-width:520px;margin:0 auto;z-index:40;display:block;width:auto;text-align:left;border:1px solid var(--border);background:#FFFBEA;color:#3A3A3A;font-size:12.5px;font-weight:600;padding:7px 12px;border-radius:10px;box-shadow:0 2px 10px rgba(0,0,0,.08);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;font-family:inherit;}
+.last-log b{color:#16202A;}
+.last-log .lt{color:#888;font-weight:500;}
+.log-section{scroll-margin-bottom:180px;
   margin:0 12px 12px;
   background:var(--card);
   border:1px solid var(--border);
@@ -803,7 +806,7 @@ header h1{
 <div class="upd-bar" id="updBar"><span id="updText">새 버전이 있습니다. 업데이트하시겠습니까?</span><button type="button" id="updGo">업데이트</button><button type="button" id="updLater">나중에</button></div>
 <header>
   <div class="header-top">
-    <div class="title-wrap"><h1 class="h1-ver"><span class="status-dot" id="statusDot"></span><span class="ver-tag">ver 0.11</span>새로고침 재고관리</h1><div class="sync-line"><span class="sync-time" id="syncTime">동기화 중…</span><button type="button" class="sync-btn" id="btnSync" title="지금 최신 자료로 다시 맞추기">⟳ 동기화</button></div></div>
+    <div class="title-wrap"><h1 class="h1-ver"><span class="status-dot" id="statusDot"></span><span class="ver-tag">ver 0.12</span>새로고침 재고관리</h1><div class="sync-line"><span class="sync-time" id="syncTime">동기화 중…</span><button type="button" class="sync-btn" id="btnSync" title="지금 최신 자료로 다시 맞추기">⟳ 동기화</button></div></div>
     <button type="button" class="user-chip empty" id="userChip">이름 정하기</button>
   </div>
   <button type="button" class="inst-btn" id="btnInst">바탕화면에 바로가기 만들기</button>
@@ -843,6 +846,7 @@ header h1{
   <div class="log-list" id="logList"></div>
 </div>
 
+<button type="button" class="last-log" id="lastLog" title="눌러서 변경 기록 보기">📝 최근 변경: 불러오는 중…</button>
 <div class="fab-row">
   <button class="fab ghost" id="btnAddCategory">+ 분류 추가</button>
   <button class="fab primary" id="btnAddItemGlobal">+ 상품 추가</button>
@@ -1322,8 +1326,13 @@ function renderLogs(){
     const authorHtml = l.author ? `<span class="log-author">${escapeHtml(l.author)}</span>` : '';
     return `<div class="log-item">${authorHtml}${escapeHtml(l.message||'')}<span class="log-time">${timeStr}</span></div>`;
   }).join('');
-  listEl.scrollTop = listEl.scrollHeight;
+  const toEnd = ()=>{ listEl.scrollTop = listEl.scrollHeight; };
+  toEnd(); requestAnimationFrame(toEnd); setTimeout(toEnd, 300);
+  const L = logs[logs.length - 1], ll = document.getElementById('lastLog');
+  if(ll && L){ const t = L.createdAt && L.createdAt.toDate ? L.createdAt.toDate() : null;
+    ll.innerHTML = '📝 최근 변경: ' + (L.author ? '<b>' + escapeHtml(L.author) + '</b> ' : '') + escapeHtml(L.message || '') + (t ? ' <span class="lt">· ' + t.toLocaleString('ko-KR', { month:'numeric', day:'numeric', hour:'2-digit', minute:'2-digit' }) + '</span>' : ''); }
 }
+document.getElementById('lastLog').addEventListener('click', ()=>{ const sec = document.querySelector('.log-section'); if(sec) sec.scrollIntoView({ block:'end', behavior:'smooth' }); const l = document.getElementById('logList'); setTimeout(()=>{ l.scrollTop = l.scrollHeight; }, 400); });
 
 function formatWon(n){
   return Math.round(Number(n||0)).toLocaleString('ko-KR') + '원';
@@ -2529,7 +2538,16 @@ const APP_NAME = '새로고침 재고관리';
 const SC_MAIN = { url: SHARE_URL, name: APP_NAME, label: '새로고침 재고', key: 'main', file: 'serogochim' };
 let SC = SC_MAIN;
 let instEv = null;
-window.addEventListener('beforeinstallprompt', e=>{ e.preventDefault(); instEv = e; });
+let mfKey = 'main', instEvKey = 'main', mfOrig = null;
+window.addEventListener('beforeinstallprompt', e=>{ e.preventDefault(); instEv = e; instEvKey = mfKey; });
+function mfUse(t){ const l = document.querySelector('link[rel="manifest"]'); if(!l || !t) return; if(mfOrig === null) mfOrig = l.getAttribute('href');
+  const k = t.key || 'main'; if(k === mfKey) return; mfKey = k; instEv = null;
+  if(k === 'main'){ l.setAttribute('href', mfOrig); return; }
+  const U = SHARE_URL, q = '?app=' + encodeURIComponent(k);
+  const m = { id: U + q, name: t.name, short_name: t.label, start_url: t.url.replace(U, U + q), scope: U, display: 'standalone', background_color: '#ffffff', theme_color: '#1B6E4A',
+    icons: [{ src: U + 'icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' }, { src: U + 'icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' }] };
+  try{ l.setAttribute('href', URL.createObjectURL(new Blob([JSON.stringify(m)], { type: 'application/manifest+json' }))); }catch(e){} }
+function mfBack(){ setTimeout(()=> mfUse(SC_MAIN), 1500); }
 window.addEventListener('appinstalled', ()=>{ instEv = null; shToast('바탕화면에 바로가기를 만들었습니다', 5000); });
 const scUA = navigator.userAgent;
 const scWin = /Windows NT/.test(scUA) && !/Android|iPhone|iPad/.test(scUA);
@@ -2596,8 +2614,9 @@ function scChoose(){
 // 윈도우 설치: 크롬·엣지가 직접 설치할 수 있으면 그 창(바탕화면·시작 메뉴를 만들어 줌), 켤 때 같이 시작은 작은 파일로 덧붙임
 function scInstallWin(w){
   if(!w.desk && !w.start && !w.auto){ winIcon({ desk:false, start:false, auto:false }); return; }
-  if(instEv && SC === SC_MAIN && (w.desk || w.start)){ const e = instEv; instEv = null;
-    try{ e.prompt(); e.userChoice.then(r=>{ if(r && r.outcome === 'accepted' && w.auto) setTimeout(()=> winIcon({ desk:false, start:false, auto:true }), 800); }).catch(()=>{}); }catch(x){} return; }
+  if(instEv && instEvKey === (SC.key || 'main') && (w.desk || w.start)){ const e = instEv; instEv = null;
+    try{ e.prompt(); e.userChoice.then(r=>{ mfBack(); if(r && r.outcome === 'accepted' && w.auto) setTimeout(()=> winIcon({ desk:false, start:false, auto:true }), 800); }).catch(()=> mfBack()); }catch(x){ mfBack(); } return; }
+  mfBack();
   winIcon(w);
 }
 
@@ -2630,9 +2649,10 @@ function andShortcut(){
 function instSheet(title, html, go){ document.getElementById('instTitle').textContent = title; document.getElementById('instText').innerHTML = html; document.getElementById('instGo').textContent = '만들기'; document.getElementById('instClose').textContent = go ? '아니오' : '닫기';
   const g = document.getElementById('instGo'); g.style.display = go ? '' : 'none'; g.onclick = ()=>{ document.getElementById('instOverlay').classList.remove('open'); if(go) go(); };
   document.getElementById('instOverlay').classList.add('open'); }
-document.getElementById('instClose').addEventListener('click', ()=> document.getElementById('instOverlay').classList.remove('open'));
+document.getElementById('instClose').addEventListener('click', ()=>{ document.getElementById('instOverlay').classList.remove('open'); mfBack(); });
 function doShortcut(){
-  if(instEv && SC === SC_MAIN){ const e = instEv; instEv = null; try{ e.prompt(); e.userChoice.then(r=>{ if(r && r.outcome === 'accepted' && scWin && !scPlainChrome) setTimeout(winIcon, 800); }).catch(()=>{}); }catch(x){} return; }
+  if(instEv && instEvKey === (SC.key || 'main')){ const e = instEv; instEv = null; try{ e.prompt(); e.userChoice.then(r=>{ mfBack(); if(r && r.outcome === 'accepted' && scWin && !scPlainChrome && SC === SC_MAIN) setTimeout(winIcon, 800); }).catch(()=> mfBack()); }catch(x){ mfBack(); } return; }
+  mfBack();
   if(shIOS){ if(scKakao){ location.href = 'kakaotalk://web/openExternal?url=' + encodeURIComponent(SC.url); return; }
     if(scInApp){ instSheet('사파리로 열어 주세요', '이 화면은 앱 안 브라우저라 아이콘을 만들 수 없습니다. 오른쪽 위(또는 아래) 메뉴에서 <b>사파리로 열기</b>를 누른 뒤 다시 눌러 주세요.'); return; }
     iosShortcut(); return; }
@@ -2659,7 +2679,7 @@ function openCatMenu(x, y, id, name){
   document.body.appendChild(m);
   const W = window.innerWidth, Hh = window.innerHeight, r = m.getBoundingClientRect();
   m.style.left = Math.max(8, Math.min(x, W - r.width - 8)) + 'px'; m.style.top = Math.max(8, Math.min(y, Hh - r.height - 8)) + 'px';
-  m.querySelector('[data-m="sc"]').onclick = ()=>{ closeCatMenu(); SC = tgt(); if(scWin) scChoose(); else scMake('desk'); };
+  m.querySelector('[data-m="sc"]').onclick = ()=>{ closeCatMenu(); SC = tgt(); mfUse(SC); if(scWin || ('onbeforeinstallprompt' in window && !shIOS)) scChoose(); else scMake('desk'); };
   m.querySelector('[data-m="copy"]').onclick = ()=>{ closeCatMenu(); const u = tgt().url; const ok = ()=>shToast(name + ' 주소를 복사했습니다'); if(navigator.clipboard && window.isSecureContext) navigator.clipboard.writeText(u).then(ok, ()=>{ shCopyOld(u) && ok(); }); else if(shCopyOld(u)) ok(); };
   setTimeout(()=>document.addEventListener('pointerdown', catMenuOutside, true), 0);
 }
@@ -2688,7 +2708,7 @@ function applyDeepCat(){
 }
 
 // 0.5 새 버전 알림: 켤 때 version.json을 보고, 더 새 판이 있으면 왼쪽 위에 알림. [업데이트] 한 번이면 새 판으로 다시 열림 (재고 기록은 그대로)
-const APP_VER = '0.11';
+const APP_VER = '0.12';
 const VER_URL = 'https://ds4eqm-lgtm.github.io/inventory/version.json';
 function verNum(v){ const p = String(v||'0').split('.'); return [parseInt(p[0])||0, parseInt(p[1])||0]; }
 function verNewer(a, b){ const x = verNum(a), y = verNum(b); return x[0] > y[0] || (x[0] === y[0] && x[1] > y[1]); }
