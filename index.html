@@ -1489,7 +1489,7 @@ function render(){ requestAnimationFrame(()=>{ try{ placeYard(); }catch(e){} });
     return oa - ob;
   });
 
-  // 시험판: 야적장 적재 칸을 10번창고 바로 다음(매장 앞)에 끼워 넣음
+  // 야적장 적재 칸을 10번창고 바로 다음(매장 앞)에 끼워 넣음
   const yardDefault = sortedCategories.find(c => catNorm(c.name) === '매장') || sortedCategories.find(c => /10번\s*창고/.test(c.name));
   const yAfterId = (yardCfg && yardCfg.afterCat !== undefined) ? yardCfg.afterCat : (yardDefault ? yardDefault.id : '__top');
   let yardAfter = yAfterId === '__top' ? null : sortedCategories.find(c=>c.id === yAfterId);
