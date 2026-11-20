@@ -246,7 +246,7 @@ header h1{
 .sh{display:block;padding:13px 6px;border:none;border-radius:10px;font-size:14.5px;font-weight:700;text-align:center;text-decoration:none;color:#fff;cursor:pointer;}
 .sh-copy{background:#374151}.sh-kakao{background:#FEE500;color:#191919}.sh-flow{background:#6449FC}.sh-sms{background:#E07A1F}.sh-other{background:#1B6E3C;grid-column:1/-1}
 .sh-toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%);max-width:88%;background:#222;color:#fff;padding:11px 16px;border-radius:12px;font-size:14px;z-index:9999;display:none;text-align:center;line-height:1.5;}
-.yard-card .cat-head{border-left-color:#E07A1F;}
+.yard-card .cat-head{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;border-left-color:#E07A1F;}
 .yard-tag{display:inline-block;margin-left:6px;padding:1px 7px;border-radius:9px;background:#FFF1E3;color:#B4560C;font-size:10.5px;font-weight:700;vertical-align:1px;}
 .yard-thumb{width:46px;height:46px;border-radius:8px;object-fit:cover;object-position:top;border:1px solid var(--border);margin-right:10px;flex:none;}
 .yard-body{padding:10px 12px 14px;border-top:1px solid var(--border);}
@@ -803,7 +803,7 @@ header h1{
 <div class="upd-bar" id="updBar"><span id="updText">새 버전이 있습니다. 업데이트하시겠습니까?</span><button type="button" id="updGo">업데이트</button><button type="button" id="updLater">나중에</button></div>
 <header>
   <div class="header-top">
-    <div class="title-wrap"><h1 class="h1-ver"><span class="status-dot" id="statusDot"></span><span class="ver-tag">ver 0.10</span>새로고침 재고관리</h1><div class="sync-line"><span class="sync-time" id="syncTime">동기화 중…</span><button type="button" class="sync-btn" id="btnSync" title="지금 최신 자료로 다시 맞추기">⟳ 동기화</button></div></div>
+    <div class="title-wrap"><h1 class="h1-ver"><span class="status-dot" id="statusDot"></span><span class="ver-tag">ver 0.11</span>새로고침 재고관리</h1><div class="sync-line"><span class="sync-time" id="syncTime">동기화 중…</span><button type="button" class="sync-btn" id="btnSync" title="지금 최신 자료로 다시 맞추기">⟳ 동기화</button></div></div>
     <button type="button" class="user-chip empty" id="userChip">이름 정하기</button>
   </div>
   <button type="button" class="inst-btn" id="btnInst">바탕화면에 바로가기 만들기</button>
@@ -1418,7 +1418,7 @@ async function moveItem(sortedList, itemId, direction){
   await batch.commit();
 }
 
-function render(){
+function render(){ requestAnimationFrame(()=>{ try{ placeYard(); }catch(e){} });
   const search = document.getElementById('searchInput').value.trim().toLowerCase();
   const listEl = document.getElementById('catList');
   listEl.innerHTML = '';
@@ -1809,12 +1809,17 @@ document.getElementById('itemQuickMoveBtn').addEventListener('click', async ()=>
 // 0.9 상품 → 야적장: 재고 목록에서 빼고(휴지통·되돌리기에 남김) 배치도를 펼쳐 넣을 빈 칸을 고르게 함
 const MOVE_DEFAULTS = ['2층창고','3층창고','10번창고','40번창고','매장','서두','가격표'];
 const catNorm = t=> String(t||'').replace(/\s+/g, '');
+const MOVE_ORDER = ['2층창고','3층창고','매장','10번창고','40번창고','야적장','서두','가격표'];
 function moveTargets(exceptId, withYard){
   const cats = categories.slice().sort((a,b)=>(a.order??0)-(b.order??0));
-  const out = cats.filter(c=>c.id !== exceptId).map(c=>({ v:c.id, t:c.name }));
-  const cur = categories.find(c=>c.id === exceptId);
-  MOVE_DEFAULTS.forEach(n=>{ if(!cats.some(c=>catNorm(c.name) === catNorm(n)) && !(cur && catNorm(cur.name) === catNorm(n))) out.push({ v:'__new:' + n, t:n }); });
-  if(withYard && !(yardCfg && yardCfg.hidden)){ const mi = out.findIndex(o=> catNorm(o.t) === '매장'); out.splice(mi >= 0 ? mi + 1 : out.length, 0, { v:'__yard', t:'야적장' }); }
+  const out = [], used = new Set([exceptId]);
+  MOVE_ORDER.forEach(n=>{
+    if(n === '야적장'){ if(withYard && !(yardCfg && yardCfg.hidden)) out.push({ v:'__yard', t:'야적장' }); return; }
+    const c = cats.find(x=> catNorm(x.name) === catNorm(n));
+    if(c){ if(!used.has(c.id)){ used.add(c.id); out.push({ v:c.id, t:c.name }); } }
+    else out.push({ v:'__new:' + n, t:n });
+  });
+  cats.forEach(c=>{ if(!used.has(c.id)){ used.add(c.id); out.push({ v:c.id, t:c.name }); } });
   return out;
 }
 async function ensureCat(name){
@@ -1826,26 +1831,43 @@ async function ensureCat(name){
 }
 function yardWin(){ const f = (typeof yardFr !== 'undefined' && yardFr) || document.querySelector('.yard-frame'); try{ return f && f.contentWindow; }catch(e){ return null; } }
 function palletOf(name){ const m = String(name||'').trim().match(/^(\S+)\s+(\d{8}|\d{6})(?!\d)/); if(!m) return { no: String(name||'').trim(), d: '' }; return { no: m[1], d: m[2].length === 6 ? '20' + m[2] : m[2] }; }
+let yardQueue = [];
+function placeNext(){
+  if(!yardQueue.length) return;
+  const p = yardQueue[0]; let n = 0;
+  const tryPlace = ()=>{ const w = yardWin(); if(w && typeof w.plPlace === 'function'){ yardQueue.shift(); w.plPlace(p); shToast('야적장 배치도에서 ' + p.no + ' 넣을 빈 칸을 누르세요' + (yardQueue.length ? ' (남은 ' + yardQueue.length + '개)' : ''), 6000); return; }
+    if(++n < 40) setTimeout(tryPlace, 400); else { shToast('재고 목록에서 뺐습니다. 야적장 배치도에서 빈 칸을 눌러 ' + yardQueue.map(x=>x.no).join(', ') + ' 을(를) 넣어 주세요', 9000); yardQueue = []; } };
+  setTimeout(tryPlace, 300);
+}
+window.serogochimNext = ()=> setTimeout(placeNext, 300);  // 배치도에서 한 칸 넣을 때마다 불러 다음 상품으로
+function showYard(){ openState.__yard = true; render(); setTimeout(()=>{ const el = document.querySelector('.yard-card'); if(el) el.scrollIntoView({ block:'start', behavior:'smooth' }); }, 150); }
 async function moveToYard(item){
   if(!requireName()) return;
   const catName = (categories.find(c=>c.id===item.categoryId) || {}).name || '';
   const label = `상품 이동: "${item.name}" → "야적장"`;
-  const trashId = await saveToTrash({ type:'item', label, items:[packDoc(item)] });
+  await saveToTrash({ type:'item', label, items:[packDoc(item)] });
   await snapUndo([item.categoryId], label);
   await deleteDoc(doc(db,'items', item.id));
   addLog(`[상품 이동] "${item.name}" : "${catName}" → "야적장" (${formatQty(item.qty)}${item.unit||''})`);
   itemOverlay.classList.remove('open');
-  openState.__yard = true; render();
-  setTimeout(()=>{ const el = document.querySelector('.yard-card'); if(el) el.scrollIntoView({ block:'start', behavior:'smooth' }); }, 150);
-  const p = palletOf(item.name); let n = 0;
-  const tryPlace = ()=>{ const w = yardWin(); if(w && typeof w.plPlace === 'function'){ w.plPlace(p); shToast('야적장 배치도에서 넣을 빈 칸을 누르세요', 6000); return; }
-    if(++n < 40) setTimeout(tryPlace, 400); else shToast('재고 목록에서 뺐습니다. 야적장 배치도에서 빈 칸을 눌러 ' + p.no + ' 을(를) 넣어 주세요', 8000); };
-  setTimeout(tryPlace, 300);
+  showYard(); yardQueue = [palletOf(item.name)]; placeNext();
+}
+async function moveAllToYard(sourceCat, list){
+  if(!list.length) return;
+  if(!requireName()) return;
+  if(!confirm(`"${sourceCat.name}"에 있는 상품 ${list.length}개를 야적장으로 옮길까요? 배치도에서 하나씩 빈 칸을 눌러 넣으면 됩니다`)) return;
+  const label = `"${sourceCat.name}" 상품 ${list.length}개 → "야적장"`;
+  await saveToTrash({ type:'item', label, items: list.map(packDoc) });
+  await snapUndo([sourceCat.id], label);
+  const batch = writeBatch(db); list.forEach(it=> batch.delete(doc(db,'items', it.id))); await batch.commit();
+  addLog(`[분류 이동] "${sourceCat.name}"의 상품 ${list.length}개를 "야적장"으로 이동함: ${list.map(i=>i.name).join(', ')}`);
+  moveCatOverlay.classList.remove('open');
+  showYard(); yardQueue = list.map(it=> palletOf(it.name)); placeNext();
 }
 document.getElementById('itemDeleteBtn').addEventListener('click', async ()=>{
   if(!requireName()) return;
-  if(!confirm('이 상품을 삭제할까요')) return;
   const item = items.find(i=>i.id === editingItemId);
+  if(!confirm(`"${item ? item.name : ''}" 이 상품을 삭제할까요?`)) return;
   if(!item){ itemOverlay.classList.remove('open'); return; }
   const catName = (categories.find(c=>c.id===item.categoryId) || {}).name || '';
   const label = `상품 "${item.name}" 삭제 (${catName} · ${formatQty(item.qty)}${item.unit||''})`;
@@ -2141,7 +2163,7 @@ function openMoveCatSheet(catId, itemCount){
 
   const sel = document.getElementById('moveCatTargetSelect');
   sel.innerHTML = '';
-  moveTargets(catId, false).forEach(t=>{ const opt = document.createElement('option'); opt.value = t.v; opt.textContent = t.t; sel.appendChild(opt); });
+  moveTargets(catId, true).forEach(t=>{ const opt = document.createElement('option'); opt.value = t.v; opt.textContent = t.t; sel.appendChild(opt); });
 
   moveCatOverlay.classList.add('open');
 }
@@ -2155,6 +2177,7 @@ document.getElementById('moveCatConfirmBtn').addEventListener('click', async ()=
   const sourceCat = categories.find(c=>c.id === moveCatSourceId);
   const targetCat = categories.find(c=>c.id === targetId);
   const movingItems = items.filter(i=>i.categoryId === moveCatSourceId);
+  if(targetId === '__yard'){ await moveAllToYard(sourceCat, movingItems); return; }
 
   if(!confirm(`"${sourceCat.name}"에 있는 상품 ${movingItems.length}개를 "${targetCat.name}"로 옮길까요`)) return;
 
@@ -2632,11 +2655,11 @@ function openCatMenu(x, y, id, name){
   closeCatMenu();
   const m = document.createElement('div'); m.className = 'cat-menu'; m.id = 'catMenu';
   const tgt = ()=> id === null ? SC_MAIN : catShortcutTarget(id, name);
-  m.innerHTML = `<div class="cm-title">${escapeHtml(name)}</div>` + scOptions().map(o=>`<button type="button" data-w="${o[0]}">${o[1]}</button>`).join('') + `<button type="button" data-m="copy">🔗 ${id === null ? '주소' : '이 분류 주소'} 복사</button>`;
+  m.innerHTML = `<div class="cm-title">${escapeHtml(name)}</div><button type="button" data-m="sc">${shAnd || shIOS ? '📱 홈 화면에 바로가기' : '🖥️ 바탕화면에 바로가기'}</button><button type="button" data-m="copy">🔗 ${id === null ? '주소' : '이 분류 주소'} 복사</button>`;
   document.body.appendChild(m);
   const W = window.innerWidth, Hh = window.innerHeight, r = m.getBoundingClientRect();
   m.style.left = Math.max(8, Math.min(x, W - r.width - 8)) + 'px'; m.style.top = Math.max(8, Math.min(y, Hh - r.height - 8)) + 'px';
-  m.querySelectorAll('[data-w]').forEach(b=> b.onclick = ()=>{ closeCatMenu(); SC = tgt(); scMake(b.dataset.w); });
+  m.querySelector('[data-m="sc"]').onclick = ()=>{ closeCatMenu(); SC = tgt(); if(scWin) scChoose(); else scMake('desk'); };
   m.querySelector('[data-m="copy"]').onclick = ()=>{ closeCatMenu(); const u = tgt().url; const ok = ()=>shToast(name + ' 주소를 복사했습니다'); if(navigator.clipboard && window.isSecureContext) navigator.clipboard.writeText(u).then(ok, ()=>{ shCopyOld(u) && ok(); }); else if(shCopyOld(u)) ok(); };
   setTimeout(()=>document.addEventListener('pointerdown', catMenuOutside, true), 0);
 }
@@ -2647,8 +2670,10 @@ function bindCatMenu(head, id, name){
   head.addEventListener('contextmenu', (e)=>{ e.preventDefault(); openCatMenu(e.clientX, e.clientY, id, name); });
   // 아이폰·아이패드 사파리는 길게 눌러도 contextmenu가 안 오므로 직접 잰다
   head.addEventListener('touchstart', (e)=>{ catPressed = false; const t = e.touches[0]; clearTimeout(catPressT);
-    catPressT = setTimeout(()=>{ catPressed = true; openCatMenu(t.clientX, t.clientY, id, name); }, 650); }, { passive:true });
-  ['touchend','touchmove','touchcancel'].forEach(ev=> head.addEventListener(ev, ()=> clearTimeout(catPressT), { passive:true }));
+    head._sx = t.clientX; head._sy = t.clientY;
+    catPressT = setTimeout(()=>{ catPressed = true; try{ navigator.vibrate && navigator.vibrate(15); }catch(e){} openCatMenu(t.clientX, t.clientY, id, name); }, 500); }, { passive:true });
+  ['touchend','touchcancel'].forEach(ev=> head.addEventListener(ev, ()=> clearTimeout(catPressT), { passive:true }));
+  head.addEventListener('touchmove', (e)=>{ const t = e.touches[0]; if(t && Math.hypot(t.clientX - head._sx, t.clientY - head._sy) > 12) clearTimeout(catPressT); }, { passive:true });
   head.addEventListener('click', (e)=>{ if(catPressed){ catPressed = false; e.stopImmediatePropagation(); e.preventDefault(); } }, true);
 }
 // 바로가기로 열었을 때(#cat=...) 그 분류를 펼치고 그 자리로
@@ -2663,7 +2688,7 @@ function applyDeepCat(){
 }
 
 // 0.5 새 버전 알림: 켤 때 version.json을 보고, 더 새 판이 있으면 왼쪽 위에 알림. [업데이트] 한 번이면 새 판으로 다시 열림 (재고 기록은 그대로)
-const APP_VER = '0.10';
+const APP_VER = '0.11';
 const VER_URL = 'https://ds4eqm-lgtm.github.io/inventory/version.json';
 function verNum(v){ const p = String(v||'0').split('.'); return [parseInt(p[0])||0, parseInt(p[1])||0]; }
 function verNewer(a, b){ const x = verNum(a), y = verNum(b); return x[0] > y[0] || (x[0] === y[0] && x[1] > y[1]); }
