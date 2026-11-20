@@ -804,6 +804,10 @@ var m={id:U+Q,name:'새로고침 재고 - '+n,short_name:n,start_url:U+Q+'#cat='
 icons:[{src:U+'icon-192.png',sizes:'192x192',type:'image/png',purpose:'any'},{src:U+'icon-512.png',sizes:'512x512',type:'image/png',purpose:'any'}]};
 l.setAttribute('href',URL.createObjectURL(new Blob([JSON.stringify(m)],{type:'application/manifest+json'})));window.__appMf=k;}catch(e){}})();</script>
 <style>.cat-split{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px}.cat-split .cs-r{display:contents}.cat-split select{font-weight:800;color:#0f1a24}#itemOverlay .field label{font-size:15px;font-weight:800;color:#1b2733}#itemOverlay .field input,#itemOverlay .field select{font-weight:700;color:#0f1a24;font-size:18px}#itemOverlay h2{font-size:22px;font-weight:900}#itemOverlay .unit-opt{font-size:18px;font-weight:800;color:#0f1a24}#itemOverlay .unit-opt.selected,#itemOverlay .unit-opt.active{color:#fff}#itemOverlay .sheet-btns button{font-size:18px;font-weight:800}#itemQuickMoveSelect{flex:1 1 0!important;font-size:17px!important;font-weight:800;color:#0f1a24;min-width:0}#itemQuickMoveBtn{flex:1 1 0!important;min-width:0;white-space:nowrap;padding:12px 6px!important}#itemOverlay .btn-cancel{color:#33414e}.cat-split select{width:100%;min-width:0;padding-left:8px;padding-right:4px}.cat-split label{white-space:nowrap}.it-rp{display:inline-block;margin-left:6px;font-size:11.5px;font-weight:700;color:#1B6E4A;background:#E6F2EC;border-radius:6px;padding:1px 6px;vertical-align:middle}</style>
+<style>@keyframes onBlink{0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(61,220,132,.75)}50%{opacity:.35;box-shadow:0 0 0 4px rgba(61,220,132,0)}}
+.status-dot.online{animation:onBlink 2s ease-in-out infinite;animation-delay:var(--ph,0ms)}
+.online-row .on-chip::before{animation:onBlink 2s ease-in-out infinite;animation-delay:var(--ph,0ms)}
+.status-dot.ping,.online-row.ping .on-chip::before{outline:2px solid #fff;outline-offset:1px}</style>
 </head>
 <body>
 
@@ -817,7 +821,7 @@ l.setAttribute('href',URL.createObjectURL(new Blob([JSON.stringify(m)],{type:'ap
 <div class="upd-bar" id="updBar"><span id="updText">새 버전이 있습니다. 업데이트하시겠습니까?</span><button type="button" id="updGo">업데이트</button><button type="button" id="updLater">나중에</button></div>
 <header>
   <div class="header-top">
-    <div class="title-wrap"><h1 class="h1-ver"><span class="status-dot" id="statusDot"></span><span class="ver-tag">ver 0.16</span><span data-lbl="title">새로고침 재고관리</span></h1><div class="sync-line"><span class="sync-time" id="syncTime">동기화 중…</span><button type="button" class="sync-btn" id="btnSync" title="지금 최신 자료로 다시 맞추기">⟳ 동기화</button></div></div>
+    <div class="title-wrap"><h1 class="h1-ver"><span class="status-dot" id="statusDot"></span><span class="ver-tag">ver 0.17</span><span data-lbl="title">새로고침 재고관리</span></h1><div class="sync-line"><span class="sync-time" id="syncTime">동기화 중…</span><button type="button" class="sync-btn" id="btnSync" title="지금 최신 자료로 다시 맞추기">⟳ 동기화</button></div></div>
     <button type="button" class="user-chip empty" id="userChip">이름 정하기</button>
   </div>
   <button type="button" class="inst-btn" id="btnInst">바탕화면에 바로가기 만들기</button>
@@ -2818,7 +2822,7 @@ function applyDeepCat(){
 }
 
 // 0.5 새 버전 알림: 켤 때 version.json을 보고, 더 새 판이 있으면 왼쪽 위에 알림. [업데이트] 한 번이면 새 판으로 다시 열림 (재고 기록은 그대로)
-const APP_VER = '0.16';
+const APP_VER = '0.17';
 const VER_URL = 'https://ds4eqm-lgtm.github.io/inventory/version.json';
 function verNum(v){ const p = String(v||'0').split('.'); return [parseInt(p[0])||0, parseInt(p[1])||0]; }
 function verNewer(a, b){ const x = verNum(a), y = verNum(b); return x[0] > y[0] || (x[0] === y[0] && x[1] > y[1]); }
@@ -2850,18 +2854,33 @@ let presId = null; try{ presId = sessionStorage.getItem('serogochim_pres'); }cat
 if(!presId){ presId = 'p' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8); try{ sessionStorage.setItem('serogochim_pres', presId); }catch(e){} }
 const presDev = shAnd || shIOS ? '휴대폰' : '컴퓨터';
 let presList = [];
+const presSeen = {};
+function blinkPhase(){ const ph = -(Date.now() % 2000) + 'ms'; document.documentElement.style.setProperty('--ph', ph); }
+function pingDots(){ const d = document.getElementById('statusDot'), r = document.getElementById('onlineRow'); [d, r].forEach(x=> x && x.classList.add('ping')); setTimeout(()=> [d, r].forEach(x=> x && x.classList.remove('ping')), 350); }
 function beat(){ if(document.hidden || !userName) return; commitInChunks([{ type:'set', ref: doc(db,'presence', presId), data: { name: userName || '이름 없음', dev: presDev, at: serverTimestamp() } }]).catch(()=>{}); }
 function showOnline(){
   const now = Date.now(), seen = new Map();
-  presList.forEach(p=>{ const t = p.at && p.at.toMillis ? p.at.toMillis() : 0; if(now - t > 120000 || p.gone) return; const k = (p.name||'이름 없음') + '|' + (p.dev||''); if(!seen.has(k)) seen.set(k, p); });
+  presList.forEach(p=>{ const t = p.id === presId ? now : (presSeen[p.id] || 0); if(now - t > 25000 || p.gone) return; const k = (p.name||'이름 없음') + '|' + (p.dev||''); if(!seen.has(k)) seen.set(k, p); });
+  if(!document.hidden && !presList.some(p=>p.id === presId)){ const nm = userName || '이름 없음', k = nm + '|' + presDev; if(!seen.has(k)) seen.set(k, { id:presId, name:nm, dev:presDev }); }
   const list = [...seen.values()];
   const el = document.getElementById('onlineRow');
-  el.innerHTML = '<span>지금 접속 중 <b>' + list.length + '명</b></span>' + list.map(p=>`<span class="on-chip${p.id === presId ? ' me' : ''}">${escapeHtml(p.name || '이름 없음')} · ${escapeHtml(p.dev || '')}${p.id === presId ? ' (나)' : ''}</span>`).join('');
+  const html = '<span>지금 접속 중 <b>' + list.length + '명</b></span>' + list.map(p=>`<span class="on-chip${p.id === presId ? ' me' : ''}">${escapeHtml(p.name || '이름 없음')} · ${escapeHtml(p.dev || '')}${p.id === presId ? ' (나)' : ''}</span>`).join('');
+  if(el.innerHTML !== html){ el.innerHTML = html; } blinkPhase();
 }
-onSnapshot(presenceCol, (snap)=>{ presList = snap.docs.map(d=>({ id:d.id, ...d.data() })); showOnline(); });
-setInterval(()=>{ beat(); showOnline(); }, 30000);
-document.addEventListener('visibilitychange', ()=>{ if(!document.hidden) beat(); });
-window.addEventListener('pagehide', ()=>{ try{ deleteDoc(doc(db,'presence', presId)); }catch(e){} });
+let presFirst = true;
+onSnapshot(presenceCol, (snap)=>{ const now = Date.now();
+  (snap.docChanges ? snap.docChanges() : snap.docs.map(d=>({ type:'modified', doc:d }))).forEach(ch=>{ const d = ch.doc.data(), id = ch.doc.id;
+    if(ch.type === 'removed'){ delete presSeen[id]; return; }
+    const t = d.at && d.at.toMillis ? d.at.toMillis() : now;
+    presSeen[id] = presFirst ? Math.min(now, t) : now; });
+  presFirst = false; presList = snap.docs.map(d=>({ id:d.id, ...d.data() })); showOnline(); pingDots(); });
+setInterval(beat, 10000);
+setInterval(showOnline, 2000);
+const presLeave = ()=>{ try{ deleteDoc(doc(db,'presence', presId)); }catch(e){} };
+document.addEventListener('visibilitychange', ()=>{ if(document.hidden) presLeave(); else beat(); });
+window.addEventListener('pagehide', presLeave);
+window.addEventListener('beforeunload', presLeave);
+window.addEventListener('pageshow', ()=>{ beat(); showOnline(); });
 beat();
 
 document.getElementById('btnTrash').addEventListener('click', ()=>{
