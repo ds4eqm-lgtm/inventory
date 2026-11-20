@@ -2571,6 +2571,7 @@ function doShortcut(){
 }
 function askYes(msg, fn){ instSheet('바로가기', msg, fn); document.getElementById('instGo').textContent = '예'; document.getElementById('instClose').textContent = '아니오'; }
 document.getElementById('btnInst').addEventListener('click', ()=>{ SC = SC_MAIN;
+  if(instEv){ try{ localStorage.setItem('serogochim_sc_made', '1'); }catch(e){} doShortcut(); return; }  // 크롬·엣지는 자기 "설치하시겠습니까?" 창이 바로 뜨므로 한 번만 묻게
   let had = false; try{ had = !!localStorage.getItem('serogochim_sc_made'); localStorage.setItem('serogochim_sc_made', '1'); }catch(e){}
   askYes(had ? '바탕화면에 바로가기를 새로 생성하시겠습니까?<br><span style="font-size:13px">이미 있으면 새 것으로 바꿉니다</span>' : '바탕화면에 바로가기를 생성하시겠습니까?', doShortcut); });
 
