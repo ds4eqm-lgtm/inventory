@@ -821,7 +821,7 @@ l.setAttribute('href',URL.createObjectURL(new Blob([JSON.stringify(m)],{type:'ap
 <div class="upd-bar" id="updBar"><span id="updText">새 버전이 있습니다. 업데이트하시겠습니까?</span><button type="button" id="updGo">업데이트</button><button type="button" id="updLater">나중에</button></div>
 <header>
   <div class="header-top">
-    <div class="title-wrap"><h1 class="h1-ver"><span class="status-dot" id="statusDot"></span><span class="ver-tag">ver 0.17</span><span data-lbl="title">새로고침 재고관리</span></h1><div class="sync-line"><span class="sync-time" id="syncTime">동기화 중…</span><button type="button" class="sync-btn" id="btnSync" title="지금 최신 자료로 다시 맞추기">⟳ 동기화</button></div></div>
+    <div class="title-wrap"><h1 class="h1-ver"><span class="status-dot" id="statusDot"></span><span class="ver-tag">ver 0.18</span><span data-lbl="title">새로고침 재고관리</span></h1><div class="sync-line"><span class="sync-time" id="syncTime">동기화 중…</span><button type="button" class="sync-btn" id="btnSync" title="지금 최신 자료로 다시 맞추기">⟳ 동기화</button></div></div>
     <button type="button" class="user-chip empty" id="userChip">이름 정하기</button>
   </div>
   <button type="button" class="inst-btn" id="btnInst">바탕화면에 바로가기 만들기</button>
@@ -1750,6 +1750,13 @@ document.querySelectorAll('.unit-opt').forEach(el=>{
   el.addEventListener('click', ()=> setUnitSelection(el.dataset.unit));
 });
 
+// 0.18 같은 상품 동시 수정 알림: 창을 열 때 내용을 기억해 두고, 저장할 때 그사이 바뀌었는지 비교
+let editingSnap = null;
+const SIG_F = ['name','qty','unit','price','location','categoryId','rack','park'];
+function itemSig(it){ if(!it) return null; const o = {}; SIG_F.forEach(k=> o[k] = (it[k] === undefined || it[k] === null) ? '' : String(it[k])); return JSON.stringify(o); }
+function sigDiff(a, b){ const A = JSON.parse(a), B = JSON.parse(b), N = { name:'제품명', qty:'수량', unit:'단위', price:'가격', location:'위치', categoryId:'분류', rack:'렉 번호', park:'주차장 렉 번호' };
+  const v = (k, x)=> k === 'categoryId' ? ((categories.find(c=>c.id===x)||{}).name || x) : (k === 'rack' || k === 'park') ? (!x ? '없음' : x === 'floor' ? '바닥' : x + '번') : k === 'price' ? formatWon(x) : (x || '없음');
+  return SIG_F.filter(k=> A[k] !== B[k]).map(k=> `${N[k]}: ${v(k, A[k])} → ${v(k, B[k])}`); }
 function openItemSheet(catId, itemId){
   if(!requireName()) return;
   if(categories.length === 0){
@@ -1758,6 +1765,7 @@ function openItemSheet(catId, itemId){
   }
   editingItemCatId = catId;
   editingItemId = itemId;
+  editingSnap = itemId ? itemSig(items.find(i=>i.id === itemId)) : null;
 
   populateCatSelect(catId);
 
@@ -1822,9 +1830,17 @@ document.getElementById('itemSaveBtn').addEventListener('click', async ()=>{
   try{
     const catName = (categories.find(c=>c.id===catId) || {}).name || '';
     if(editingItemId){
-      const oldItem = items.find(i=>i.id === editingItemId) || {};
+      const nowItem = items.find(i=>i.id === editingItemId);
+      if(!nowItem){ alert('이 상품은 방금 다른 사람이 지웠거나 다른 곳으로 옮겼습니다.\n창을 닫을게요. 필요하면 삭제 복구로 되살릴 수 있어요.'); itemOverlay.classList.remove('open'); return; }
+      const nowSig = itemSig(nowItem);
+      if(editingSnap && nowSig !== editingSnap){
+        const who = nowItem.by && nowItem.by !== userName ? nowItem.by + '님이' : '다른 사람이';
+        const ok = confirm(`같은 상품을 ${who} 방금 고쳤습니다.\n\n바뀐 내용\n${sigDiff(editingSnap, nowSig).join('\n')}\n\n내가 고친 내용으로 덮어쓸까요?\n(취소를 누르면 방금 바뀐 내용을 다시 보여 드려요)`);
+        if(!ok){ openItemSheet(nowItem.categoryId, nowItem.id); return; }
+      }
+      const oldItem = nowItem;
       const rack = document.getElementById('itemRackSelect').value, park = document.getElementById('itemParkSelect').value;
-      const updatePayload = { location, name, unit:selectedUnit, qty, price, categoryId:catId, rack, park };
+      const updatePayload = { location, name, unit:selectedUnit, qty, price, categoryId:catId, rack, park, by: userName || '이름없음' };
       if(oldItem.order === undefined){
         const siblingItems = items.filter(i=>i.categoryId === catId && i.id !== editingItemId);
         const insertOrder = computeInsertOrder(siblingItems, name);
@@ -1861,7 +1877,7 @@ document.getElementById('itemSaveBtn').addEventListener('click', async ()=>{
       const siblingItems = items.filter(i=>i.categoryId === catId);
       const insertOrder = computeInsertOrder(siblingItems, name);
       const newPayload = {
-        location, name, unit:selectedUnit, qty, price, categoryId:catId, rack: document.getElementById('itemRackSelect').value, park: document.getElementById('itemParkSelect').value, createdAt: serverTimestamp()
+        location, name, unit:selectedUnit, qty, price, categoryId:catId, rack: document.getElementById('itemRackSelect').value, park: document.getElementById('itemParkSelect').value, by: userName || '이름없음', createdAt: serverTimestamp()
       };
       if(insertOrder !== undefined) newPayload.order = insertOrder;
       await snapUndo([catId], `상품 추가: "${name}"`);
@@ -2822,7 +2838,7 @@ function applyDeepCat(){
 }
 
 // 0.5 새 버전 알림: 켤 때 version.json을 보고, 더 새 판이 있으면 왼쪽 위에 알림. [업데이트] 한 번이면 새 판으로 다시 열림 (재고 기록은 그대로)
-const APP_VER = '0.17';
+const APP_VER = '0.18';
 const VER_URL = 'https://ds4eqm-lgtm.github.io/inventory/version.json';
 function verNum(v){ const p = String(v||'0').split('.'); return [parseInt(p[0])||0, parseInt(p[1])||0]; }
 function verNewer(a, b){ const x = verNum(a), y = verNum(b); return x[0] > y[0] || (x[0] === y[0] && x[1] > y[1]); }
