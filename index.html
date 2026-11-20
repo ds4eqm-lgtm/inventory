@@ -474,6 +474,87 @@ header h1{
   justify-content:space-between;
   align-items:center;
 }
+.undo-toast{
+  position:fixed;
+  left:12px;
+  right:12px;
+  bottom:72px;
+  max-width:520px;
+  margin:0 auto;
+  background:var(--navy);
+  color:#fff;
+  border-radius:12px;
+  padding:10px 10px 10px 14px;
+  display:flex;
+  align-items:center;
+  gap:10px;
+  box-shadow:0 8px 20px rgba(15,20,35,.3);
+  z-index:45;
+  transform:translateY(20px);
+  opacity:0;
+  pointer-events:none;
+  transition:opacity .2s, transform .2s;
+}
+.undo-toast.show{
+  opacity:1;
+  transform:translateY(0);
+  pointer-events:auto;
+}
+.undo-toast-text{
+  flex:1;
+  min-width:0;
+  font-size:12.5px;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.undo-toast-btn{
+  flex:0 0 auto;
+  border:none;
+  background:#F5A623;
+  color:var(--navy);
+  font-weight:800;
+  font-size:13px;
+  padding:8px 12px;
+  border-radius:8px;
+  cursor:pointer;
+}
+.trash-list{
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+  max-height:55vh;
+  overflow-y:auto;
+}
+.trash-item{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  background:var(--bg);
+  border-radius:10px;
+  padding:10px 12px;
+}
+.trash-item.restored{opacity:.55;}
+.trash-info{flex:1;min-width:0;}
+.trash-label{font-size:13px;font-weight:600;line-height:1.4;word-break:keep-all;}
+.trash-meta{font-size:11px;color:var(--muted);margin-top:3px;}
+.trash-restore{
+  flex:0 0 auto;
+  border:none;
+  background:var(--blue);
+  color:#fff;
+  font-weight:700;
+  font-size:13px;
+  padding:8px 14px;
+  border-radius:8px;
+  cursor:pointer;
+}
+.trash-done{
+  flex:0 0 auto;
+  font-size:11px;
+  color:var(--muted);
+  font-weight:600;
+}
 .log-header .log-user-btn{
   font-size:11px;
   font-weight:600;
@@ -692,6 +773,7 @@ header h1{
 <div class="log-section">
   <div class="log-header">
     <span>변경 기록</span>
+    <button type="button" class="log-user-btn" id="btnTrash">삭제 복구</button>
   </div>
   <div class="log-list" id="logList"></div>
 </div>
@@ -701,6 +783,24 @@ header h1{
   <button class="fab primary" id="btnAddItemGlobal">+ 상품 추가</button>
 </div>
 
+</div>
+
+<!-- 삭제 직후 되돌리기 알림 -->
+<div class="undo-toast" id="undoToast">
+  <span class="undo-toast-text" id="undoToastText"></span>
+  <button type="button" class="undo-toast-btn" id="undoToastBtn">되돌리기</button>
+</div>
+
+<!-- 삭제 복구 시트 -->
+<div class="overlay" id="trashOverlay">
+  <div class="sheet">
+    <h2>삭제 복구</h2>
+    <div class="name-hint">최근 삭제된 30건이에요. 복구 누르면 지워지기 직전 그대로 되살아나요</div>
+    <div class="trash-list" id="trashList"></div>
+    <div class="sheet-btns">
+      <button class="btn-cancel" id="trashCloseBtn">닫기</button>
+    </div>
+  </div>
 </div>
 
 <!-- 사용자 이름 설정 시트 -->
@@ -868,7 +968,7 @@ header h1{
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
 import {
   getFirestore, collection, doc, addDoc, updateDoc, deleteDoc,
-  onSnapshot, query, orderBy, limitToLast, writeBatch, deleteField,
+  onSnapshot, query, orderBy, limit, limitToLast, writeBatch, deleteField,
   serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
 
@@ -904,6 +1004,7 @@ const db = getFirestore(app);
 const categoriesCol = collection(db, 'categories');
 const itemsCol = collection(db, 'items');
 const logsCol = collection(db, 'logs');
+const trashCol = collection(db, 'trash');
 
 let categories = [];
 let items = [];
@@ -1186,14 +1287,21 @@ function render(){
     head.querySelector('[data-action="delcat"]').addEventListener('click', async (e)=>{
       e.stopPropagation();
       if(!requireName()) return;
-      if(!confirm(cat.name + ' 분류를 삭제할까. 안의 상품도 함께 삭제된다')) return;
-      const batch = writeBatch(db);
-      items.filter(i=>i.categoryId === cat.id).forEach(i=>{
-        batch.delete(doc(db,'items', i.id));
+      if(!confirm(cat.name + ' 분류를 삭제할까요. 안의 상품도 함께 삭제돼요\n삭제 후에도 삭제 복구 버튼으로 되살릴 수 있어요')) return;
+      const delItems = items.filter(i=>i.categoryId === cat.id);
+      const label = `분류 "${cat.name}" 삭제 (상품 ${delItems.length}개 포함)`;
+      const trashId = await saveToTrash({
+        type: 'category',
+        label,
+        category: packDoc(cat),
+        items: delItems.map(packDoc)
       });
-      batch.delete(doc(db,'categories', cat.id));
-      await batch.commit();
-      addLog(`[분류 삭제] "${cat.name}" (포함된 품목 ${catItems.length}개도 함께 삭제됨)`);
+      if(!trashId && !confirm('복구용 백업 저장에 실패했어요. 이대로 지우면 되살릴 수 없어요. 그래도 삭제할까요')) return;
+      const ops = delItems.map(i=>({ type:'delete', ref: doc(db,'items', i.id) }));
+      ops.push({ type:'delete', ref: doc(db,'categories', cat.id) });
+      await commitInChunks(ops);
+      addLog(`[분류 삭제] "${cat.name}" (포함된 품목 ${delItems.length}개도 함께 삭제됨)`);
+      if(trashId) showUndoToast(trashId, label);
     });
 
     const body = document.createElement('div');
@@ -1431,14 +1539,18 @@ document.getElementById('itemQuickMoveBtn').addEventListener('click', async ()=>
 });
 
 document.getElementById('itemDeleteBtn').addEventListener('click', async ()=>{
-  if(!confirm('이 상품을 삭제할까')) return;
+  if(!requireName()) return;
+  if(!confirm('이 상품을 삭제할까요')) return;
   const item = items.find(i=>i.id === editingItemId);
-  await deleteDoc(doc(db,'items', editingItemId));
-  if(item){
-    const catName = (categories.find(c=>c.id===item.categoryId) || {}).name || '';
-    addLog(`[상품 삭제] "${item.name}" (${catName} · ${formatQty(item.qty)}${item.unit||''} · ${formatWon(item.price)})`);
-  }
+  if(!item){ itemOverlay.classList.remove('open'); return; }
+  const catName = (categories.find(c=>c.id===item.categoryId) || {}).name || '';
+  const label = `상품 "${item.name}" 삭제 (${catName} · ${formatQty(item.qty)}${item.unit||''})`;
+  const trashId = await saveToTrash({ type:'item', label, items:[packDoc(item)] });
+  if(!trashId && !confirm('복구용 백업 저장에 실패했어요. 이대로 지우면 되살릴 수 없어요. 그래도 삭제할까요')) return;
+  await deleteDoc(doc(db,'items', item.id));
+  addLog(`[상품 삭제] "${item.name}" (${catName} · ${formatQty(item.qty)}${item.unit||''} · ${formatWon(item.price)})`);
   itemOverlay.classList.remove('open');
+  if(trashId) showUndoToast(trashId, label);
 });
 
 // 검색 + 검색기록 (기기마다 따로 저장됨)
@@ -1895,6 +2007,173 @@ document.getElementById('excelUploadInput').addEventListener('change', async (e)
   } finally {
     e.target.value = '';
   }
+});
+
+// 삭제 복구 (휴지통). 삭제 직전 내용을 trash 컬렉션에 통째로 보관했다가 되살린다
+let trash = [];
+const trashOverlay = document.getElementById('trashOverlay');
+const trashListEl = document.getElementById('trashList');
+const undoToast = document.getElementById('undoToast');
+let toastTimer = null;
+let toastTrashId = null;
+
+function packDoc(d){
+  const { id, ...data } = d;
+  return { id, data };
+}
+
+async function saveToTrash(entry){
+  try{
+    const ref = await addDoc(trashCol, {
+      ...entry,
+      author: userName || '이름없음',
+      deletedAt: serverTimestamp(),
+      restored: false
+    });
+    return ref.id;
+  }catch(err){
+    console.error(err);
+    return null;
+  }
+}
+
+// 파이어베이스는 한 번에 500건까지만 묶어서 저장돼서 나눠서 보낸다
+async function commitInChunks(ops){
+  const CHUNK = 450;
+  for(let i=0; i<ops.length; i+=CHUNK){
+    const batch = writeBatch(db);
+    ops.slice(i, i+CHUNK).forEach(op=>{
+      if(op.type === 'delete') batch.delete(op.ref);
+      else if(op.type === 'set') batch.set(op.ref, op.data);
+      else if(op.type === 'update') batch.update(op.ref, op.data);
+    });
+    await batch.commit();
+  }
+}
+
+onSnapshot(query(trashCol, orderBy('deletedAt','desc'), limit(30)), (snap)=>{
+  trash = snap.docs.map(d=>({ id:d.id, ...d.data() }));
+  renderTrash();
+}, (err)=>{ console.error(err); });
+
+function formatTime(ts){
+  const t = ts && ts.toDate ? ts.toDate() : null;
+  return t ? t.toLocaleString('ko-KR', { month:'numeric', day:'numeric', hour:'2-digit', minute:'2-digit' }) : '저장중';
+}
+
+function renderTrash(){
+  if(trash.length === 0){
+    trashListEl.innerHTML = '<div class="log-empty">삭제된 기록이 없어요</div>';
+    return;
+  }
+  trashListEl.innerHTML = trash.map((t, i)=>{
+    const who = escapeHtml(t.author || '이름없음');
+    const status = t.restored
+      ? `<span class="trash-done">${escapeHtml(t.restoredBy || '')} 복구함</span>`
+      : `<button type="button" class="trash-restore" data-idx="${i}">복구</button>`;
+    return `
+      <div class="trash-item ${t.restored ? 'restored' : ''}">
+        <div class="trash-info">
+          <div class="trash-label">${escapeHtml(t.label || '')}</div>
+          <div class="trash-meta">${who} · ${formatTime(t.deletedAt)}</div>
+        </div>
+        ${status}
+      </div>`;
+  }).join('');
+}
+
+trashListEl.addEventListener('click', (e)=>{
+  const btn = e.target.closest('.trash-restore');
+  if(!btn) return;
+  const t = trash[Number(btn.dataset.idx)];
+  if(!t) return;
+  if(!confirm(`${t.label}\n이 내용을 되살릴까요`)) return;
+  restoreTrash(t);
+});
+
+async function restoreTrash(t){
+  if(!requireName()) return false;
+  if(t.restored){ alert('이미 복구된 내용이에요'); return false; }
+
+  const ops = [];
+  let overrideCatId = null;
+
+  if(t.type === 'category' && t.category){
+    ops.push({ type:'set', ref: doc(db,'categories', t.category.id), data: t.category.data });
+  } else {
+    const catId = t.items && t.items[0] ? t.items[0].data.categoryId : null;
+    if(!categories.some(c=>c.id === catId)){
+      const sortedCats = categories.slice().sort((a,b)=>(a.order||0)-(b.order||0));
+      if(sortedCats.length === 0){
+        alert('원래 분류가 없어져서 넣을 곳이 없어요. 분류를 먼저 만들거나 분류 삭제 기록부터 복구해주세요');
+        return false;
+      }
+      if(!confirm(`원래 분류가 지금 없어요. "${sortedCats[0].name}" 분류로 복구할까요`)) return false;
+      overrideCatId = sortedCats[0].id;
+    }
+  }
+
+  (t.items || []).forEach(it=>{
+    const data = { ...it.data };
+    if(!data.createdAt) data.createdAt = serverTimestamp();
+    if(overrideCatId){
+      data.categoryId = overrideCatId;
+      delete data.order;
+    }
+    ops.push({ type:'set', ref: doc(db,'items', it.id), data });
+  });
+  ops.push({ type:'update', ref: doc(db,'trash', t.id), data: { restored:true, restoredBy: userName, restoredAt: serverTimestamp() } });
+
+  try{
+    await commitInChunks(ops);
+    addLog(`[삭제 복구] ${t.label}`);
+    hideUndoToast();
+    return true;
+  }catch(err){
+    console.error(err);
+    alert('복구 중 문제가 생겼어요. 잠시 후 다시 해주세요');
+    return false;
+  }
+}
+
+function showUndoToast(trashId, label){
+  toastTrashId = trashId;
+  document.getElementById('undoToastText').textContent = label;
+  undoToast.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(hideUndoToast, 10000);
+}
+function hideUndoToast(){
+  undoToast.classList.remove('show');
+  clearTimeout(toastTimer);
+  toastTrashId = null;
+}
+
+document.getElementById('undoToastBtn').addEventListener('click', async ()=>{
+  const id = toastTrashId;
+  if(!id) return;
+  const t = trash.find(x=>x.id === id);
+  if(!t){ alert('복구 정보를 아직 불러오는 중이에요. 삭제 복구 버튼에서 다시 해주세요'); return; }
+  await restoreTrash(t);
+});
+
+document.getElementById('btnTrash').addEventListener('click', ()=>{
+  renderTrash();
+  trashOverlay.classList.add('open');
+});
+document.getElementById('trashCloseBtn').addEventListener('click', ()=> trashOverlay.classList.remove('open'));
+trashOverlay.addEventListener('click', (e)=>{ if(e.target === trashOverlay) trashOverlay.classList.remove('open'); });
+
+// PC에서 Ctrl+Z (맥은 Cmd+Z) 누르면 가장 최근 삭제를 되살림
+document.addEventListener('keydown', async (e)=>{
+  if(!(e.ctrlKey || e.metaKey) || e.shiftKey || e.key.toLowerCase() !== 'z') return;
+  const tag = (e.target.tagName || '').toLowerCase();
+  if(tag === 'input' || tag === 'textarea' || tag === 'select' || e.target.isContentEditable) return;
+  e.preventDefault();
+  const latest = trash.find(t=>!t.restored);
+  if(!latest){ alert('되살릴 삭제 기록이 없어요'); return; }
+  if(!confirm(`가장 최근 삭제를 되살릴까요\n${latest.label}`)) return;
+  restoreTrash(latest);
 });
 
 }
