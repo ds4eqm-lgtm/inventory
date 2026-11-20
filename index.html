@@ -70,6 +70,10 @@ header h1{
 .header-top h1{margin-top:0;}
 .title-wrap{min-width:0;}
 .sync-time{font-size:12px;margin-top:3px;color:#9FE3B4;font-weight:600;}
+.sync-line{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.sync-btn{margin-top:3px;border:1px solid rgba(159,227,180,.6);background:rgba(159,227,180,.12);color:#C9F5DA;font-size:12px;font-weight:800;border-radius:999px;padding:3px 10px;cursor:pointer;}
+.sync-btn:hover{background:rgba(159,227,180,.25);}
+.sync-btn.spin{opacity:.6;pointer-events:none;}
 .sync-time.off{color:#FFB4A8;}
 .user-chip{
   flex:0 0 auto;
@@ -211,6 +215,13 @@ header h1{
 .cat-menu .cm-title{font-size:12px;color:var(--muted);font-weight:700;padding:6px 10px 4px;}
 .cat-menu button{display:block;width:100%;text-align:left;border:none;background:none;padding:11px 10px;font-size:14.5px;font-weight:700;border-radius:8px;cursor:pointer;color:#16202A;}
 .cat-menu button:hover{background:#F1F3F7;}
+.sc-opts{display:flex;flex-direction:column;gap:10px;margin-top:4px;}
+.sc-opt{display:block;width:100%;text-align:left;border:1px solid var(--border);background:#fff;padding:15px 14px;font-size:16px;font-weight:800;border-radius:12px;cursor:pointer;color:#16202A;}
+.sc-opt:hover{background:#EEF7F2;border-color:#1B6E4A;}
+.sc-chk{display:flex;align-items:center;gap:12px;border:1px solid var(--border);background:#fff;padding:14px;font-size:16px;font-weight:800;border-radius:12px;cursor:pointer;color:#16202A;}
+.sc-chk input{width:22px;height:22px;accent-color:#1B6E4A;margin:0;flex:none;}
+.sc-tip{font-size:12.5px;color:var(--muted);line-height:1.5;}
+.sc-off{border:none;background:none;color:var(--muted);font-size:13px;text-decoration:underline;cursor:pointer;padding:4px;align-self:flex-end;}
 .send-row{position:fixed;bottom:10px;left:12px;right:12px;max-width:520px;margin:0 auto;display:flex;align-items:center;gap:6px;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:5px 6px;box-shadow:0 2px 10px rgba(0,0,0,.08);z-index:5;}
 .send-lbl{font-size:11.5px;color:var(--muted);font-weight:700;white-space:nowrap;padding:0 2px 0 4px;}
 .sd{flex:1;padding:8px 2px;border:none;border-radius:9px;font-size:13px;font-weight:700;text-align:center;text-decoration:none;color:#fff;cursor:pointer;white-space:nowrap;}
@@ -218,7 +229,10 @@ header h1{
 .qr-box{display:flex;justify-content:center;margin:6px 0 4px;}
 .qr-box svg{width:260px;height:260px;max-width:80vw;max-height:80vw;background:#fff;border-radius:6px;}
 .inst-btn{display:block;width:100%;margin-top:10px;padding:10px;border:none;border-radius:10px;background:#FFD54A;color:#16202A;font-size:14.5px;font-weight:800;cursor:pointer;}
-.online-row{margin-top:8px;font-size:12.5px;color:#C9D6EA;line-height:1.5;}
+.online-row{margin-top:8px;font-size:12.5px;color:#C9D6EA;line-height:1.5;display:flex;flex-wrap:wrap;align-items:center;gap:6px;}
+.online-row .on-chip{display:inline-flex;align-items:center;gap:5px;background:rgba(255,255,255,.12);color:#fff;border-radius:999px;padding:3px 10px;font-weight:700;white-space:nowrap;}
+.online-row .on-chip::before{content:"";width:7px;height:7px;border-radius:50%;background:#3DDC84;}
+.online-row .on-chip.me{background:rgba(61,220,132,.22);color:#C9F5DA;}
 .online-row b{color:#fff;}
 .online-row .me{color:#9FE3B4;}
 .cat-head-right .icon-btn{white-space:nowrap;}
@@ -236,6 +250,8 @@ header h1{
 .yard-body{padding:10px 12px 14px;border-top:1px solid var(--border);}
 .yard-body img{display:block;width:100%;max-width:420px;margin:0 auto;border-radius:10px;border:1px solid var(--border);}
 .yard-frame{display:block;width:100%;max-width:520px;height:720px;margin:0 auto;border:1px solid var(--border);border-radius:10px;background:#fff;}
+.yard-slot{display:block;width:100%;max-width:520px;height:720px;margin:0 auto;}
+.yard-float{position:absolute;z-index:5;margin:0;max-width:none;box-sizing:border-box;}
 .yard-note{font-size:12px;color:var(--muted);margin:8px 0 10px;line-height:1.55;}
 .yard-open{display:block;width:100%;max-width:420px;margin:0 auto;padding:12px;border:none;border-radius:10px;background:#E07A1F;color:#fff;font-size:15px;font-weight:700;text-align:center;text-decoration:none;}
 .cat-card{
@@ -784,9 +800,9 @@ header h1{
 
 <div class="upd-bar" id="updBar"><span id="updText">새 버전이 있습니다. 업데이트하시겠습니까?</span><button type="button" id="updGo">업데이트</button><button type="button" id="updLater">나중에</button></div>
 <header>
-  <div class="brand"><span class="status-dot" id="statusDot"></span> <span class="ver-tag">ver 0.6</span> SEROGOCHIM · 실시간 동기화</div>
+  <div class="brand"><span class="status-dot" id="statusDot"></span> <span class="ver-tag">ver 0.7</span> SEROGOCHIM · 실시간 동기화</div>
   <div class="header-top">
-    <div class="title-wrap"><h1>새로고침 재고관리</h1><div class="sync-time" id="syncTime">동기화 중…</div></div>
+    <div class="title-wrap"><h1>새로고침 재고관리</h1><div class="sync-line"><span class="sync-time" id="syncTime">동기화 중…</span><button type="button" class="sync-btn" id="btnSync" title="지금 최신 자료로 다시 맞추기">⟳ 동기화</button></div></div>
     <button type="button" class="user-chip empty" id="userChip">이름 정하기</button>
   </div>
   <button type="button" class="inst-btn" id="btnInst">바탕화면에 바로가기 만들기</button>
@@ -1092,7 +1108,33 @@ const trashCol = collection(db, 'trash');
 
 // 0.4 야적장 LVT 칸 위치·숨김 (settings/yard), 바꾸기 전 모습은 undo에 남김
 let yardCfg = null, yardCur = { afterCat:'__top', hidden:false };
-onSnapshot(collection(db, 'settings'), (snap)=>{ const d = snap.docs.find(x=>x.id === 'yard'); yardCfg = d ? d.data() : null; try{ render(); }catch(e){} });
+const PAL_URL = 'https://ds4eqm-lgtm.github.io/commerce-insight/pallet/';
+let palKey = null, palKeyReady = false, yardFr = null, yardWait = null;
+function palLocalTok(){ try{ const c = JSON.parse(localStorage.getItem('pl1_cfg') || 'null'); return c && c.tok ? String(c.tok) : null; }catch(e){ return null; } }
+function palEnc(t){ return btoa(t.split('').reverse().join('')); }
+function palDec(k){ try{ return atob(k).split('').reverse().join(''); }catch(e){ return null; } }
+function palUrl(){ const t = palLocalTok() || palKey; return PAL_URL + (t ? '?in=inv#t=' + encodeURIComponent(t) : ''); }
+function palShare(){}
+window.addEventListener('storage', (e)=>{ if(e.key === 'pl1_cfg') palShare(); });
+function yardLoad(){ if(!yardFr) return; clearTimeout(yardWait);
+  if(palLocalTok() || palKeyReady){ const u = palUrl(); if(yardFr.dataset.u !== u && !(yardFr.dataset.u && palLocalTok())){ yardFr.dataset.u = u; yardFr.src = u; } }
+  else yardWait = setTimeout(()=>{ if(!yardFr.dataset.u){ yardFr.dataset.u = PAL_URL; yardFr.src = PAL_URL; } }, 4000); }
+function placeYard(){
+  const slot = document.querySelector('.yard-slot');
+  if(!slot){ if(yardFr) yardFr.style.display = 'none'; return; }
+  if(!yardFr){ yardFr = document.createElement('iframe'); yardFr.className = 'yard-frame yard-float'; yardFr.title = '야적장 팔레트 배치도';
+    yardFr.addEventListener('load', ()=>{ try{ const d = yardFr.contentDocument; if(!d) return; const st = d.createElement('style');
+      st.textContent = '#bInst,#upd,#rep,#bShare{display:none!important}#bar:not(.err){display:none!important}#sbox details{display:none!important}';
+      d.head.appendChild(st); }catch(e){} palShare(); });
+    document.body.appendChild(yardFr); }
+  const r = slot.getBoundingClientRect();
+  Object.assign(yardFr.style, { display:'block', top:(r.top + window.scrollY) + 'px', left:(r.left + window.scrollX) + 'px', width:r.width + 'px', height:r.height + 'px' });
+  yardLoad();
+}
+window.addEventListener('resize', ()=> requestAnimationFrame(placeYard));
+try{ new ResizeObserver(()=> requestAnimationFrame(placeYard)).observe(document.body); }catch(e){}
+onSnapshot(collection(db, 'settings'), (snap)=>{ const d = snap.docs.find(x=>x.id === 'yard'); yardCfg = d ? d.data() : null;
+  const pk = snap.docs.find(x=>x.id === 'pallet'); palKeyReady = true; palShare(); try{ render(); }catch(e){} });
 async function setYard(patch, label){
   await snapUndo(['__yard'], label, { yard: { ...yardCur } });
   try{ await commitInChunks([{ type:'set', ref: doc(db,'settings','yard'), data: { ...yardCur, ...patch } }]); addLog(`[야적장 LVT] ${label}`); }
@@ -1424,7 +1466,7 @@ function render(){
       </div>
       ${open ? `<div class="yard-body">
         <div class="yard-note">야적장 팔레트 배치도입니다. 여기서 넣거나 고친 것은 실제 야적장 기록에 남습니다. <a href="https://ds4eqm-lgtm.github.io/commerce-insight/pallet/" target="_blank" rel="noopener">새 창으로 크게 열기</a></div>
-        <iframe class="yard-frame" title="야적장 팔레트 배치도"></iframe>
+        <div class="yard-slot"></div>
       </div>` : ''}`;
     bindCatMenu(card.querySelector('.cat-head'), '__yard', '야적장 LVT');
     card.querySelector('.cat-head').addEventListener('click', (e)=>{ if(e.target.closest('[data-action]')) return; openState.__yard = !open; render(); });
@@ -1434,11 +1476,8 @@ function render(){
     yAct('ymove', ()=> openYardMove(sortedCategories));
     yAct('yundo', ()=> undoCat('__yard'));
     yAct('ydel', hideYard);
-    const fr = card.querySelector('.yard-frame');
-    if(fr){ fr.addEventListener('load', ()=>{ try{ const d = fr.contentDocument; if(!d) return; const st = d.createElement('style');
-        st.textContent = '#bInst,#upd,#rep,#bShare{display:none!important}#bar:not(.err){display:none!important}#sbox details{display:none!important}';
-        d.head.appendChild(st); }catch(e){} });
-      fr.src = 'https://ds4eqm-lgtm.github.io/commerce-insight/pallet/'; }
+    const yl = card.querySelector('.yard-note a'); if(yl) yl.href = palUrl();
+    requestAnimationFrame(placeYard);
     listEl.appendChild(card);
   }
 
@@ -2452,7 +2491,7 @@ function scUuid(){ return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g
 function scB64utf16(t){ const u = new Uint8Array(t.length*2); for(let i=0;i<t.length;i++){ const c = t.charCodeAt(i); u[i*2] = c&255; u[i*2+1] = c>>8; } let s=''; for(let i=0;i<u.length;i+=8192) s += String.fromCharCode.apply(null, u.subarray(i, i+8192)); return btoa(s); }
 function psq(x){ return "'" + String(x).replace(/'/g, "''") + "'"; }
 // 윈도우(어느 브라우저든): 한 번 열면 바탕화면에 재고 아이콘 바로가기를 만들고 스스로 지워지는 작은 파일
-function winIconPs(){
+function winIconPs(where){ const W = typeof where === "object" && where ? where : { desk: !where || where === "desk", start: where === "start", auto: where === "auto", off: where === "autooff" };
   const pref = /Edg\//.test(scUA) ? 'edge' : /Whale\//.test(scUA) ? 'whale' : 'chrome';
   return [
     "$ErrorActionPreference='SilentlyContinue'",
@@ -2463,18 +2502,52 @@ function winIconPs(){
     "$pf=$env:ProgramFiles; $px=${env:ProgramFiles(x86)}; $la=$env:LOCALAPPDATA",
     "$c=@{chrome=@(\"$pf\\Google\\Chrome\\Application\\chrome.exe\",\"$px\\Google\\Chrome\\Application\\chrome.exe\",\"$la\\Google\\Chrome\\Application\\chrome.exe\");edge=@(\"$px\\Microsoft\\Edge\\Application\\msedge.exe\",\"$pf\\Microsoft\\Edge\\Application\\msedge.exe\");whale=@(\"$pf\\Naver\\Naver Whale\\Application\\whale.exe\",\"$px\\Naver\\Naver Whale\\Application\\whale.exe\",\"$la\\Naver\\Naver Whale\\Application\\whale.exe\")}",
     "$exe=$null; foreach($k in @($pref,'chrome','edge','whale')){ foreach($e in $c[$k]){ if(-not $exe -and (Test-Path $e)){$exe=$e} } }",
-    "$d=[Environment]::GetFolderPath('Desktop')",
+    "$sf=[Environment]::GetFolderPath('Startup'); if(" + (W.off || (typeof where === 'object' && !W.auto) ? '$true' : '$false') + "){ Remove-Item (Join-Path $sf ($name+'.lnk')) -Force }",
+    "$want=@(" + [W.desk ? "'Desktop'" : '', W.start ? "'Programs'" : '', W.auto ? "'Startup'" : ''].filter(Boolean).join(',') + ")",
+    "foreach($f in $want){ $d=[Environment]::GetFolderPath($f)",
     "foreach($x in @('.html','.url','.lnk')){ Remove-Item (Join-Path $d ($name+$x)) -Force }",
     "$s=(New-Object -ComObject WScript.Shell).CreateShortcut((Join-Path $d ($name+'.lnk')))",
     "if($exe){$s.TargetPath=$exe; $s.Arguments='--app='+$url; $s.WorkingDirectory=Split-Path $exe}else{$s.TargetPath=$url}",
     "if(Test-Path $ico){$s.IconLocation=$ico+',0'}",
-    "$s.Description=$name; $s.Save()",
+    "$s.Description=$name; $s.Save() }",
     "try{& (Join-Path $env:SystemRoot 'System32\\ie4uinit.exe') -show}catch{}"
   ].join('\r\n');
 }
-function winIconBat(){ return '@echo off\r\npowershell -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -EncodedCommand ' + scB64utf16(winIconPs()) + '\r\n(goto) 2>nul & del "%~f0"\r\n'; }
-function winIcon(){ scDownload('serogochim_icon.bat', new Blob([winIconBat()], { type:'application/octet-stream' }));
-  shToast('받은 serogochim_icon 파일을 더블클릭하면 바탕화면에 아이콘이 생깁니다', 9000); }
+function winIconBat(where){ return '@echo off\r\npowershell -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -EncodedCommand ' + scB64utf16(winIconPs(where)) + '\r\n(goto) 2>nul & del "%~f0"\r\n'; }
+const SC_WHERE = { desk:['serogochim_icon', '바탕화면에 아이콘이 생깁니다'], start:['serogochim_start', '시작 메뉴에 들어갑니다'], auto:['serogochim_auto', '컴퓨터를 켤 때마다 저절로 열립니다'], autooff:['serogochim_auto_off', '켤 때 자동으로 열기가 꺼집니다'] };
+function winIcon(where){ if(where && typeof where === 'object'){ scDownload('serogochim_icon.bat', new Blob([winIconBat(where)], { type:'application/octet-stream' })); shToast('받은 serogochim_icon 파일을 더블클릭하면 끝납니다', 9000); return; }
+  where = SC_WHERE[where] ? where : 'desk'; const w = SC_WHERE[where];
+  scDownload(w[0] + '.bat', new Blob([winIconBat(where)], { type:'application/octet-stream' }));
+  shToast('받은 ' + w[0] + ' 파일을 더블클릭하면 ' + w[1], 9000); }
+// 0.7 고르는 칸: 윈도우는 세 가지, 휴대폰·맥은 하나
+function scOptions(){ const phone = shAnd || shIOS;
+  const o = [['desk', phone ? '📱 홈 화면에 바로가기' : '🖥️ 바탕화면에 바로가기']];
+  if(scWin){ o.push(['start', '📋 시작 메뉴에 넣기']); o.push(['auto', '⏻ 컴퓨터 켤 때 같이 시작']); }
+  return o; }
+function scMake(where){
+  if(where === 'desk'){ doShortcut(); return; }
+  winIcon(where); }
+function scChoose(){
+  if(!scWin){ instSheet(SC === SC_MAIN ? '바로가기 설치' : SC.label + ' 바로가기', (shAnd || shIOS ? '홈 화면에' : '바탕화면에') + ' 바로가기를 설치하시겠습니까?', ()=> scMake('desk'));
+    document.getElementById('instGo').textContent = '설치'; document.getElementById('instClose').textContent = '닫기'; return; }
+  let had = {}; try{ had = JSON.parse(localStorage.getItem('serogochim_sc_pick') || '{}'); }catch(e){}
+  const pick = { desk: had.desk !== false, start: had.start !== false, auto: !!had.auto };
+  const row = (k, t)=> `<label class="sc-chk"><input type="checkbox" data-k="${k}" ${pick[k] ? 'checked' : ''}><span>${t}</span></label>`;
+  instSheet(SC === SC_MAIN ? '바로가기 설치' : SC.label + ' 바로가기 설치', '<div class="sc-opts">' + row('desk', '🖥️ 바탕화면에 바로가기') + row('start', '📋 시작 메뉴에 넣기') + row('auto', '⏻ 컴퓨터 켤 때 같이 시작')
+    + '<div class="sc-tip">작업 표시줄에 고정하려면 설치 뒤 아이콘을 오른쪽 단추로 눌러 [작업 표시줄에 고정]을 누르세요.</div></div>', ()=>{
+      const w = {}; document.querySelectorAll('#instText [data-k]').forEach(c=> w[c.dataset.k] = c.checked);
+      try{ localStorage.setItem('serogochim_sc_pick', JSON.stringify(w)); }catch(e){}
+      scInstallWin(w); });
+  document.getElementById('instGo').textContent = '설치'; document.getElementById('instClose').textContent = '닫기';
+}
+// 윈도우 설치: 크롬·엣지가 직접 설치할 수 있으면 그 창(바탕화면·시작 메뉴를 만들어 줌), 켤 때 같이 시작은 작은 파일로 덧붙임
+function scInstallWin(w){
+  if(!w.desk && !w.start && !w.auto){ winIcon({ desk:false, start:false, auto:false }); return; }
+  if(instEv && SC === SC_MAIN && (w.desk || w.start)){ const e = instEv; instEv = null;
+    try{ e.prompt(); e.userChoice.then(r=>{ if(r && r.outcome === 'accepted' && w.auto) setTimeout(()=> winIcon({ desk:false, start:false, auto:true }), 800); }).catch(()=>{}); }catch(x){} return; }
+  winIcon(w);
+}
+
 // 아이폰·아이패드(사파리·크롬 등 모든 브라우저): 홈 화면 아이콘 설정 파일
 function iosProfile(){
   return '<?xml version="1.0" encoding="UTF-8"?>\n<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">\n<plist version="1.0"><dict>'
@@ -2517,9 +2590,10 @@ function doShortcut(){
 }
 function askYes(msg, fn){ instSheet('바로가기', msg, fn); document.getElementById('instGo').textContent = '예'; document.getElementById('instClose').textContent = '아니오'; }
 document.getElementById('btnInst').addEventListener('click', ()=>{ SC = SC_MAIN;
-  if(instEv){ try{ localStorage.setItem('serogochim_sc_made', '1'); }catch(e){} doShortcut(); return; }  // 크롬·엣지는 자기 "설치하시겠습니까?" 창이 바로 뜨므로 한 번만 묻게
+  if(instEv && !scWin){ try{ localStorage.setItem('serogochim_sc_made', '1'); }catch(e){} doShortcut(); return; }  // 휴대폰 크롬은 자기 "설치하시겠습니까?" 창이 바로 뜨므로 한 번만 묻게
   let had = false; try{ had = !!localStorage.getItem('serogochim_sc_made'); localStorage.setItem('serogochim_sc_made', '1'); }catch(e){}
-  askYes(had ? '바탕화면에 바로가기를 새로 생성하시겠습니까?<br><span style="font-size:13px">이미 있으면 새 것으로 바꿉니다</span>' : '바탕화면에 바로가기를 생성하시겠습니까?', doShortcut); });
+  scChoose(); });
+document.getElementById('btnInst').addEventListener('contextmenu', (e)=>{ e.preventDefault(); openCatMenu(e.clientX, e.clientY, null, '새로고침 재고관리'); });
 
 
 // 0.5 분류 바로가기: 분류 이름에서 오른쪽 마우스(휴대폰은 길게 누르기) → 그 분류가 펼쳐진 채로 열리는 바로가기
@@ -2527,12 +2601,13 @@ function catShortcutTarget(id, name){ return { url: SHARE_URL + '#cat=' + encode
 function openCatMenu(x, y, id, name){
   closeCatMenu();
   const m = document.createElement('div'); m.className = 'cat-menu'; m.id = 'catMenu';
-  m.innerHTML = `<div class="cm-title">${escapeHtml(name)}</div><button type="button" data-m="sc">바탕화면에 바로가기 만들기</button><button type="button" data-m="copy">이 분류 주소 복사</button>`;
+  const tgt = ()=> id === null ? SC_MAIN : catShortcutTarget(id, name);
+  m.innerHTML = `<div class="cm-title">${escapeHtml(name)}</div>` + scOptions().map(o=>`<button type="button" data-w="${o[0]}">${o[1]}</button>`).join('') + `<button type="button" data-m="copy">🔗 ${id === null ? '주소' : '이 분류 주소'} 복사</button>`;
   document.body.appendChild(m);
   const W = window.innerWidth, Hh = window.innerHeight, r = m.getBoundingClientRect();
   m.style.left = Math.max(8, Math.min(x, W - r.width - 8)) + 'px'; m.style.top = Math.max(8, Math.min(y, Hh - r.height - 8)) + 'px';
-  m.querySelector('[data-m="sc"]').onclick = ()=>{ closeCatMenu(); SC = catShortcutTarget(id, name); doShortcut(); };
-  m.querySelector('[data-m="copy"]').onclick = ()=>{ closeCatMenu(); const u = catShortcutTarget(id, name).url; const ok = ()=>shToast(name + ' 주소를 복사했습니다'); if(navigator.clipboard && window.isSecureContext) navigator.clipboard.writeText(u).then(ok, ()=>{ shCopyOld(u) && ok(); }); else if(shCopyOld(u)) ok(); };
+  m.querySelectorAll('[data-w]').forEach(b=> b.onclick = ()=>{ closeCatMenu(); SC = tgt(); scMake(b.dataset.w); });
+  m.querySelector('[data-m="copy"]').onclick = ()=>{ closeCatMenu(); const u = tgt().url; const ok = ()=>shToast(name + ' 주소를 복사했습니다'); if(navigator.clipboard && window.isSecureContext) navigator.clipboard.writeText(u).then(ok, ()=>{ shCopyOld(u) && ok(); }); else if(shCopyOld(u)) ok(); };
   setTimeout(()=>document.addEventListener('pointerdown', catMenuOutside, true), 0);
 }
 function catMenuOutside(e){ const m = document.getElementById('catMenu'); if(m && !m.contains(e.target)) closeCatMenu(); }
@@ -2558,7 +2633,7 @@ function applyDeepCat(){
 }
 
 // 0.5 새 버전 알림: 켤 때 version.json을 보고, 더 새 판이 있으면 왼쪽 위에 알림. [업데이트] 한 번이면 새 판으로 다시 열림 (재고 기록은 그대로)
-const APP_VER = '0.6';
+const APP_VER = '0.7';
 const VER_URL = 'https://ds4eqm-lgtm.github.io/inventory/version.json';
 function verNum(v){ const p = String(v||'0').split('.'); return [parseInt(p[0])||0, parseInt(p[1])||0]; }
 function verNewer(a, b){ const x = verNum(a), y = verNum(b); return x[0] > y[0] || (x[0] === y[0] && x[1] > y[1]); }
@@ -2589,7 +2664,7 @@ function showOnline(){
   presList.forEach(p=>{ const t = p.at && p.at.toMillis ? p.at.toMillis() : 0; if(now - t > 120000 || p.gone) return; const k = (p.name||'이름 없음') + '|' + (p.dev||''); if(!seen.has(k)) seen.set(k, p); });
   const list = [...seen.values()];
   const el = document.getElementById('onlineRow');
-  el.innerHTML = '지금 접속 중 <b>' + list.length + '명</b>: ' + (list.map(p=>`<span class="${p.id === presId ? 'me' : ''}">${escapeHtml(p.name || '이름 없음')}(${escapeHtml(p.dev || '')})${p.id === presId ? ' 나' : ''}</span>`).join(', ') || '없음');
+  el.innerHTML = '<span>지금 접속 중 <b>' + list.length + '명</b></span>' + list.map(p=>`<span class="on-chip${p.id === presId ? ' me' : ''}">${escapeHtml(p.name || '이름 없음')} · ${escapeHtml(p.dev || '')}${p.id === presId ? ' (나)' : ''}</span>`).join('');
 }
 onSnapshot(presenceCol, (snap)=>{ presList = snap.docs.map(d=>({ id:d.id, ...d.data() })); showOnline(); });
 setInterval(()=>{ beat(); showOnline(); }, 30000);
@@ -2618,6 +2693,8 @@ document.addEventListener('keydown', async (e)=>{
 
 }
 </script>
+<script>document.getElementById('btnSync').addEventListener('click', function(){ this.classList.add('spin'); this.textContent = '⟳ 동기화 중…';
+  setTimeout(()=>{ const u = location.href.split('#')[0].split('?')[0]; location.replace(u + '?sync=' + Date.now() + (location.hash || '')); }, 300); });</script>
 <script>if("serviceWorker" in navigator)navigator.serviceWorker.register("sw.js").catch(()=>{});</script>
 </body>
 </html>
